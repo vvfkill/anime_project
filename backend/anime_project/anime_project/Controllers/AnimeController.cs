@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using anime_project.Data;
 using anime_project.DTOs;
+using anime_project.Models;
 
 namespace anime_project.Controllers;
 
@@ -93,5 +94,33 @@ public class AnimeController : ControllerBase
         };
 
         return Ok(result);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateAnimeDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.TitleOriginal))
+            return BadRequest("TitleOriginal is required");
+
+        var anime = new anime
+        {
+            title_original = dto.TitleOriginal,
+            title_ru = dto.TitleRu,
+            description = dto.Description,
+            release_year = dto.ReleaseYear,
+            episodes_total = dto.EpisodesTotal,
+            duration_minutes = dto.DurationMinutes,
+            poster_url = dto.PosterUrl,
+            status = "ongoing"
+        };
+
+        _context.animes.Add(anime);
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Anime created",
+            animeId = anime.anime_id
+        });
     }
 }

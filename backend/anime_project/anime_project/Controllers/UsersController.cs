@@ -140,7 +140,81 @@ public class UsersController : ControllerBase
         _context.user_lists.Add(item);
         await _context.SaveChangesAsync();
 
+        var avg = await _context.user_lists
+        .Where(x => x.anime_id == dto.AnimeId && x.personal_score != null)
+        .AverageAsync(x => x.personal_score);
+
+        var anime = await _context.animes.FindAsync(dto.AnimeId);
+
+        if (anime != null)
+        {
+            anime.average_rating = (decimal?)avg;
+            await _context.SaveChangesAsync();
+        }
+
         return Ok("Added to list");
+    }
+
+    [HttpPut("{userId}/list/{animeId}")]
+    public async Task<IActionResult> UpdateUserList(int userId, int animeId, UpdateUserListDto dto)
+    {
+        var item = await _context.user_lists
+            .FirstOrDefaultAsync(x => x.user_id == userId && x.anime_id == animeId);
+
+        if (item == null)
+            return NotFound("Item not found");
+
+        // обновляем данные
+        item.status = dto.Status;
+        item.personal_score = dto.Score;
+
+        await _context.SaveChangesAsync();
+
+        // 🔽 пересчёт рейтинга
+        var avg = await _context.user_lists
+            .Where(x => x.anime_id == animeId && x.personal_score != null)
+            .AverageAsync(x => x.personal_score);
+
+        var anime = await _context.animes.FindAsync(animeId);
+
+        if (anime != null)
+        {
+            anime.average_rating = (decimal?)avg;
+            await _context.SaveChangesAsync();
+        }
+
+        return Ok("Updated");
+    }
+
+    [HttpDelete("{userId}/list/{animeId}")]
+    public async Task<IActionResult> DeleteFromUserList(int userId, int animeId)
+    {
+        var item = await _context.user_lists
+            .FirstOrDefaultAsync(x => x.user_id == userId && x.anime_id == animeId);
+
+        if (item == null)
+            return NotFound("Item not found");
+
+        _context.user_lists.Remove(item);
+        await _context.SaveChangesAsync();
+
+        var scores = await _context.user_lists
+            .Where(x => x.anime_id == animeId && x.personal_score != null)
+            .Select(x => x.personal_score!.Value)
+            .ToListAsync();
+
+        var anime = await _context.animes.FindAsync(animeId);
+
+        if (anime != null)
+        {
+            anime.average_rating = scores.Any()
+                ? (decimal?)scores.Average()
+                : null;
+
+            await _context.SaveChangesAsync();
+        }
+
+        return Ok("Deleted");
     }
 
 }
