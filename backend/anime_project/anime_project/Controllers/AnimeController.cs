@@ -17,13 +17,46 @@ public class AnimeController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> Get()
+    public async Task<IActionResult> Get(string? search ,int page = 1, int pageSize = 10)
     {
-        var animeList = await _context.animes
-            .AsNoTracking()
+        if (page < 1) page = 1;
+        if (pageSize < 1 || pageSize > 50) pageSize = 10;
+
+        var query = _context.animes.AsNoTracking();
+
+        var totalCount = await query.CountAsync();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(a =>
+                a.title_ru!.ToLower().Contains(search.ToLower()) ||
+                a.title_original.ToLower().Contains(search.ToLower()));
+        }
+
+        var items = await query
+            .OrderBy(a => a.anime_id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(a => new AnimeListDto
+            {
+                AnimeId = a.anime_id,
+                TitleRu = a.title_ru,
+                TitleOriginal = a.title_original,
+                AverageRating = a.average_rating,
+                PosterUrl = a.poster_url
+            })
             .ToListAsync();
 
-        return Ok(animeList);
+        var result = new
+        {
+            page,
+            pageSize,
+            totalCount,
+            totalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+            items
+        };
+
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
