@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AnimeTrack</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <header class="header">
+        <div class="logo">AnimeTrack</div>
+        <nav class="nav">
+            <a href="#">Главная</a>
+            <a href="#">Каталог</a>
+            <a href="#">Список</a>
+            <a href="#">Закладки</a>
+            <a href="#">Отзывы</a>
+        </nav>
+        <div class="header-right">
+            <input id="searchInput" type="text" placeholder="Поиск аниме..." />
+            <button id="searchButton">Найти</button>
+        </div>
+    </header>
+
+    <main class="main">
+        <section class="hero">
+            <div class="hero-text">
+                <div class="hero-label">СЛЕДИ. СМОТРИ. ОЦЕНИВАЙ.</div>
+                <h1>Ваш личный мир аниме</h1>
+                <p>
+                    Отслеживайте просмотренное, ищите новое
+                    и делитесь впечатлениями с другими.
+                </p>
+                <div class="hero-buttons">
+                    <button class="primary-btn">Смотреть каталог</button>
+                    <button class="secondary-btn">Мой список</button>
+                </div>
+            </div>
+
+            <div class="hero-banner">
+                <div class="hero-placeholder">Баннер</div>
+            </div>
+        </section>
+
+        <section class="section-block">
+            <div class="section-header">
+                <h2>Популярное аниме</h2>
+            </div>
+            <div id="popularAnime" class="horizontal-scroll"></div>
+        </section>
+
+        <section class="section-block">
+            <div class="section-header">
+                <h2>Новинки сезона</h2>
+            </div>
+            <div id="newAnime" class="horizontal-scroll"></div>
+        </section>
+
+        <section class="section-block">
+            <div class="section-header">
+                <h2>Результаты поиска</h2>
+            </div>
+            <div id="searchResults" class="horizontal-scroll"></div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
