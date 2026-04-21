@@ -21,4 +21,6 @@ public class AnimeDto
     public List<string> Studios { get; set; } = new();
 
     public List<string> Tags { get; set; } = new();
+
+    public string? PosterUrl { get; set; }
 }

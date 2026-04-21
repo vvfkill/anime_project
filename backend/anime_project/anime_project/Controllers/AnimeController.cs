@@ -87,6 +87,7 @@ public class AnimeController : ControllerBase
             ReleaseYear = anime.release_year,
             EpisodesTotal = anime.episodes_total,
             AverageRating = anime.average_rating,
+            PosterUrl = anime.poster_url,
 
             Genres = anime.genres.Select(g => g.name).ToList(),
             Studios = anime.studios.Select(s => s.name).ToList(),

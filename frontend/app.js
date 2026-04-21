@@ -19,15 +19,26 @@ async function fetchAnime(search = "", page = 1, pageSize = 12) {
 }
 
 function createAnimeCard(anime) {
+    const fallbackPoster = "images/no-poster.jpg";
+    const poster = anime.posterUrl && anime.posterUrl.trim() !== ""
+        ? anime.posterUrl
+        : fallbackPoster;
+
     return `
-        <div class="anime-card">
-            <img src="${anime.posterUrl || "https://via.placeholder.com/220x300?text=No+Image"}" alt="${anime.titleOriginal}">
-            <div class="anime-card-content">
-                <h3>${anime.titleRu || anime.titleOriginal}</h3>
-                <p><strong>Оригинальное:</strong> ${anime.titleOriginal}</p>
-                <p><strong>Рейтинг:</strong> ${anime.averageRating ?? "—"}</p>
+        <a class="anime-card-link" href="anime.html?id=${anime.animeId}">
+            <div class="anime-card">
+                <img 
+                    src="${poster}" 
+                    alt="${anime.titleOriginal || anime.titleRu || "Anime poster"}"
+                    onerror="this.onerror=null; this.src='${fallbackPoster}';"
+                >
+                <div class="anime-card-content">
+                    <h3>${anime.titleRu || anime.titleOriginal}</h3>
+                    <p><strong>Оригинальное:</strong> ${anime.titleOriginal}</p>
+                    <p><strong>Рейтинг:</strong> ${anime.averageRating ?? "—"}</p>
+                </div>
             </div>
-        </div>
+        </a>
     `;
 }
 
@@ -48,7 +59,7 @@ async function loadHomePage() {
         const newData = await fetchAnime("", 1, 10);
         renderSection(newAnimeContainer, newData.items);
 
-        searchResultsContainer.innerHTML = `<p class="empty-text">Введите запрос для поиска.</p>`;
+        searchResultsContainer.innerHTML = "";
     } catch (error) {
         popularAnimeContainer.innerHTML = `<p class="empty-text">Ошибка загрузки: ${error.message}</p>`;
         newAnimeContainer.innerHTML = `<p class="empty-text">Ошибка загрузки: ${error.message}</p>`;
@@ -59,7 +70,7 @@ async function searchAnime() {
     const search = searchInput.value.trim();
 
     if (!search) {
-        searchResultsContainer.innerHTML = `<p class="empty-text">Введите запрос для поиска.</p>`;
+        searchResultsContainer.innerHTML = "";
         return;
     }
 
@@ -77,6 +88,19 @@ searchInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
         searchAnime();
     }
+});
+
+document.querySelectorAll(".slider-arrow").forEach(button => {
+    button.addEventListener("click", () => {
+        const targetId = button.dataset.target;
+        const container = document.getElementById(targetId);
+        const direction = button.classList.contains("left") ? -1 : 1;
+
+        container.scrollBy({
+            left: direction * 320,
+            behavior: "smooth"
+        });
+    });
 });
 
 loadHomePage();
