@@ -7,6 +7,28 @@ const searchResultsContainer = document.getElementById("searchResults");
 const searchInput = document.getElementById("searchInput");
 const searchButton = document.getElementById("searchButton");
 
+function getCurrentUser() {
+    const user = localStorage.getItem("authUser");
+    return user ? JSON.parse(user) : null;
+}
+
+function setupProfileButton() {
+    const profileBtn = document.querySelector(".profile-btn");
+
+    if (!profileBtn) return;
+
+    profileBtn.addEventListener("click", () => {
+        const user = getCurrentUser();
+
+        if (!user) {
+            window.location.href = "login.html";
+            return;
+        }
+
+        alert(`Вы вошли как ${user.nickname || user.email || "пользователь"}`);
+    });
+}
+
 async function fetchAnime(search = "", page = 1, pageSize = 12) {
     const url = `${API_URL}?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`;
     const response = await fetch(url);
@@ -20,9 +42,10 @@ async function fetchAnime(search = "", page = 1, pageSize = 12) {
 
 function createAnimeCard(anime) {
     const fallbackPoster = "images/no-poster.jpg";
-    const poster = anime.posterUrl && anime.posterUrl.trim() !== ""
-        ? anime.posterUrl
-        : fallbackPoster;
+    const poster =
+        anime.posterUrl && anime.posterUrl.trim() !== ""
+            ? anime.posterUrl
+            : fallbackPoster;
 
     return `
         <a class="anime-card-link" href="anime.html?id=${anime.animeId}">
@@ -34,7 +57,7 @@ function createAnimeCard(anime) {
                 >
                 <div class="anime-card-content">
                     <h3>${anime.titleRu || anime.titleOriginal}</h3>
-                    <p><strong>Оригинальное:</strong> ${anime.titleOriginal}</p>
+                    <p><strong>Оригинальное:</strong> ${anime.titleOriginal || "—"}</p>
                     <p><strong>Рейтинг:</strong> ${anime.averageRating ?? "—"}</p>
                 </div>
             </div>
@@ -82,19 +105,25 @@ async function searchAnime() {
     }
 }
 
-searchButton.addEventListener("click", searchAnime);
+if (searchButton) {
+    searchButton.addEventListener("click", searchAnime);
+}
 
-searchInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-        searchAnime();
-    }
-});
+if (searchInput) {
+    searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            searchAnime();
+        }
+    });
+}
 
 document.querySelectorAll(".slider-arrow").forEach(button => {
     button.addEventListener("click", () => {
         const targetId = button.dataset.target;
         const container = document.getElementById(targetId);
         const direction = button.classList.contains("left") ? -1 : 1;
+
+        if (!container) return;
 
         container.scrollBy({
             left: direction * 320,
@@ -103,4 +132,5 @@ document.querySelectorAll(".slider-arrow").forEach(button => {
     });
 });
 
+setupProfileButton();
 loadHomePage();

@@ -11,11 +11,46 @@ function getAnimeIdFromUrl() {
     return params.get("id");
 }
 
+function getCurrentUser() {
+    const user = localStorage.getItem("authUser");
+    return user ? JSON.parse(user) : null;
+}
+
+function requireAuth() {
+    const user = getCurrentUser();
+
+    if (!user) {
+        alert("Сначала войдите в аккаунт");
+        window.location.href = "login.html";
+        return false;
+    }
+
+    return true;
+}
+
+function setupProfileButton() {
+    const profileBtn = document.querySelector(".profile-btn");
+
+    if (!profileBtn) return;
+
+    profileBtn.addEventListener("click", () => {
+        const user = getCurrentUser();
+
+        if (!user) {
+            window.location.href = "login.html";
+            return;
+        }
+
+        alert(`Вы вошли как ${user.nickname || user.email || "пользователь"}`);
+    });
+}
+
 function renderAnimeTop(anime) {
     const fallbackPoster = "images/no-poster.jpg";
-    const poster = anime.posterUrl && anime.posterUrl.trim() !== ""
-        ? anime.posterUrl
-        : fallbackPoster;
+    const poster =
+        anime.posterUrl && anime.posterUrl.trim() !== ""
+            ? anime.posterUrl
+            : fallbackPoster;
 
     animeDetails.innerHTML = `
         <div class="anime-top-layout">
@@ -37,7 +72,7 @@ function renderAnimeTop(anime) {
                 </div>
 
                 <h1>${anime.titleRu || anime.titleOriginal}</h1>
-                <h3 class="original-subtitle">${anime.titleOriginal}</h3>
+                <h3 class="original-subtitle">${anime.titleOriginal || ""}</h3>
 
                 <div class="meta-pills">
                     <span class="pill">Год: ${anime.releaseYear ?? "—"}</span>
@@ -55,9 +90,9 @@ function renderAnimeTop(anime) {
                 </div>
 
                 <div class="action-buttons">
-                    <button class="primary-btn">Добавить в мой список</button>
-                    <button class="secondary-btn">В избранное</button>
-                    <button class="secondary-btn">Оценить</button>
+                    <button id="addToListBtn" class="primary-btn">Добавить в мой список</button>
+                    <button id="addToBookmarksBtn" class="secondary-btn">В избранное</button>
+                    <button id="rateAnimeBtn" class="secondary-btn">Оценить</button>
                 </div>
             </div>
 
@@ -71,6 +106,41 @@ function renderAnimeTop(anime) {
             </div>
         </div>
     `;
+
+    ratingValue.textContent = anime.averageRating ?? "—";
+    ratingSubtext.textContent = anime.averageRating ? "Средний рейтинг" : "Оценок пока нет";
+
+    setupAnimeActionButtons(anime);
+}
+
+function setupAnimeActionButtons(anime) {
+    const addToListBtn = document.getElementById("addToListBtn");
+    const addToBookmarksBtn = document.getElementById("addToBookmarksBtn");
+    const rateAnimeBtn = document.getElementById("rateAnimeBtn");
+
+    if (addToListBtn) {
+        addToListBtn.addEventListener("click", () => {
+            if (!requireAuth()) return;
+
+            alert(`Аниме "${anime.titleRu || anime.titleOriginal}" можно добавлять в список. Следующим шагом подключим POST в API.`);
+        });
+    }
+
+    if (addToBookmarksBtn) {
+        addToBookmarksBtn.addEventListener("click", () => {
+            if (!requireAuth()) return;
+
+            alert(`Аниме "${anime.titleRu || anime.titleOriginal}" можно добавлять в закладки. Следующим шагом подключим POST в API.`);
+        });
+    }
+
+    if (rateAnimeBtn) {
+        rateAnimeBtn.addEventListener("click", () => {
+            if (!requireAuth()) return;
+
+            alert(`Для "${anime.titleRu || anime.titleOriginal}" можно будет ставить оценку. Следующим шагом подключим форму и API.`);
+        });
+    }
 }
 
 function renderReviews(reviews) {
@@ -130,5 +200,6 @@ async function loadReviews() {
     }
 }
 
+setupProfileButton();
 loadAnimeDetails();
 loadReviews();
