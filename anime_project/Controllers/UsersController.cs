@@ -1,0 +1,274 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using anime_project.Data;
+using anime_project.DTOs;
+using anime_project.Models;
+
+
+namespace anime_project.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class UsersController : ControllerBase
+{
+    private readonly AnimeProjectContext _context;
+
+    public UsersController(AnimeProjectContext context)
+    {
+        _context = context;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Get()
+    {
+        var users = await _context.users
+            .AsNoTracking()
+            .Select(u => new UserDto
+            {
+                UserId = u.user_id,
+                Nickname = u.nickname,
+                Email = u.email,
+                AvatarUrl = u.avatar_url,
+                RegistrationDate = u.registration_date,
+                Status = u.status
+            })
+            .ToListAsync();
+
+        return Ok(users);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var user = await _context.users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.user_id == id);
+
+        if (user == null)
+            return NotFound();
+
+        var result = new UserDto
+        {
+            UserId = user.user_id,
+            Nickname = user.nickname,
+            Email = user.email,
+            AvatarUrl = user.avatar_url,
+            RegistrationDate = user.registration_date,
+            Status = user.status
+        };
+
+        return Ok(result);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateUserDto dto)
+    {
+        var user = new user
+        {
+            nickname = dto.Nickname,
+            email = dto.Email,
+            phone = dto.Phone,
+            password_hash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            registration_date = DateTime.Now,
+            status = "active"
+        };
+
+        _context.users.Add(user);
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "User created",
+            userId = user.user_id
+        });
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(LoginDto dto)
+    {
+        var user = await _context.users
+            .FirstOrDefaultAsync(u => u.email == dto.Email);
+
+        if (user == null)
+            return Unauthorized("Invalid email or password");
+
+        if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.password_hash))
+            return Unauthorized("Invalid email or password");
+
+        return Ok(new
+        {
+            message = "Login successful",
+            userId = user.user_id,
+            nickname = user.nickname
+        });
+    }
+
+    [HttpGet("{id}/list")]
+    public async Task<IActionResult> GetUserList(int id)
+    {
+        var list = await _context.user_lists
+            .Where(x => x.user_id == id)
+            .Include(x => x.anime)
+            .Select(x => new UserListDto
+            {
+                AnimeId = x.anime_id,
+                Title = x.anime.title_original,
+                Status = x.status,
+                Score = x.personal_score
+            })
+            .ToListAsync();
+
+        return Ok(list);
+    }
+
+    [HttpPost("{id}/list")]
+    public async Task<IActionResult> AddToList(int id, AddToUserListDto dto)
+    {
+        var exists = await _context.user_lists
+            .AnyAsync(x => x.user_id == id && x.anime_id == dto.AnimeId);
+
+        if (exists)
+            return Conflict("Anime already in list");
+
+        var item = new user_list
+        {
+            user_id = id,
+            anime_id = dto.AnimeId,
+            status = dto.Status,
+            personal_score = dto.Score
+        };
+
+        _context.user_lists.Add(item);
+        await _context.SaveChangesAsync();
+
+        var avg = await _context.user_lists
+        .Where(x => x.anime_id == dto.AnimeId && x.personal_score != null)
+        .AverageAsync(x => x.personal_score);
+
+        var anime = await _context.animes.FindAsync(dto.AnimeId);
+
+        if (anime != null)
+        {
+            anime.average_rating = (decimal?)avg;
+            await _context.SaveChangesAsync();
+        }
+
+        return Ok("Added to list");
+    }
+
+    [HttpPut("{userId}/list/{animeId}")]
+    public async Task<IActionResult> UpdateUserList(int userId, int animeId, UpdateUserListDto dto)
+    {
+        var item = await _context.user_lists
+            .FirstOrDefaultAsync(x => x.user_id == userId && x.anime_id == animeId);
+
+        if (item == null)
+            return NotFound("Item not found");
+
+        // обновляем данные
+        item.status = dto.Status;
+        item.personal_score = dto.Score;
+
+        await _context.SaveChangesAsync();
+
+        // 🔽 пересчёт рейтинга
+        var avg = await _context.user_lists
+            .Where(x => x.anime_id == animeId && x.personal_score != null)
+            .AverageAsync(x => x.personal_score);
+
+        var anime = await _context.animes.FindAsync(animeId);
+
+        if (anime != null)
+        {
+            anime.average_rating = (decimal?)avg;
+            await _context.SaveChangesAsync();
+        }
+
+        return Ok("Updated");
+    }
+
+    [HttpDelete("{userId}/list/{animeId}")]
+    public async Task<IActionResult> DeleteFromUserList(int userId, int animeId)
+    {
+        var item = await _context.user_lists
+            .FirstOrDefaultAsync(x => x.user_id == userId && x.anime_id == animeId);
+
+        if (item == null)
+            return NotFound("Item not found");
+
+        _context.user_lists.Remove(item);
+        await _context.SaveChangesAsync();
+
+        var scores = await _context.user_lists
+            .Where(x => x.anime_id == animeId && x.personal_score != null)
+            .Select(x => x.personal_score!.Value)
+            .ToListAsync();
+
+        var anime = await _context.animes.FindAsync(animeId);
+
+        if (anime != null)
+        {
+            anime.average_rating = scores.Any()
+                ? (decimal?)scores.Average()
+                : null;
+
+            await _context.SaveChangesAsync();
+        }
+
+        return Ok("Deleted");
+    }
+
+    [HttpGet("{id}/bookmarks")]
+    public async Task<IActionResult> GetBookmarks(int id)
+    {
+        var bookmarks = await _context.bookmarks
+            .Where(b => b.user_id == id)
+            .Include(b => b.anime)
+            .Select(b => new BookmarkDto
+            {
+                AnimeId = b.anime_id,
+                Title = b.anime.title_original,
+                PosterUrl = b.anime.poster_url
+            })
+            .ToListAsync();
+
+        return Ok(bookmarks);
+    }
+
+    [HttpPost("{id}/bookmarks")]
+    public async Task<IActionResult> AddBookmark(int id, AddBookmarkDto dto)
+    {
+        var exists = await _context.bookmarks
+            .AnyAsync(b => b.user_id == id && b.anime_id == dto.AnimeId);
+
+        if (exists)
+            return Conflict("Bookmark already exists");
+
+        var bookmark = new bookmark
+        {
+            user_id = id,
+            anime_id = dto.AnimeId
+        };
+
+        _context.bookmarks.Add(bookmark);
+        await _context.SaveChangesAsync();
+
+        return Ok("Bookmark added");
+    }
+
+    [HttpDelete("{id}/bookmarks/{animeId}")]
+    public async Task<IActionResult> DeleteBookmark(int id, int animeId)
+    {
+        var bookmark = await _context.bookmarks
+            .FirstOrDefaultAsync(b => b.user_id == id && b.anime_id == animeId);
+
+        if (bookmark == null)
+            return NotFound("Bookmark not found");
+
+        _context.bookmarks.Remove(bookmark);
+        await _context.SaveChangesAsync();
+
+        return Ok("Bookmark deleted");
+    }
+
+}

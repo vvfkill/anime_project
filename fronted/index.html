@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AnimeTrack</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="page-shell">
+        <header class="header glass">
+            <div class="logo">Anime<span>Track</span></div>
+
+            <nav class="nav">
+                <a href="#" class="active">Главная</a>
+                <a href="#">Каталог</a>
+                <a href="#">Список</a>
+                <a href="#">Закладки</a>
+                <a href="#">Отзывы</a>
+            </nav>
+
+            <a href="login.html" class="profile-btn glass">
+                <span class="profile-icon">◉</span>
+                <span>Профиль</span>
+            </a>
+        </header>
+
+        <div class="search-row">
+            <div class="search-box glass">
+                <input id="searchInput" type="text" placeholder="Поиск аниме..." />
+                <button id="searchButton">Найти</button>
+            </div>
+        </div>
+
+        <main class="main-content">
+            <section class="hero glass">
+                <div class="hero-text">
+                    <div class="hero-label">СЛЕДИ. СМОТРИ. ОЦЕНИВАЙ.</div>
+                    <h1>Ваш личный мир аниме</h1>
+                    <p>
+                        Отслеживайте просмотренное, ищите новое
+                        и делитесь впечатлениями с другими.
+                    </p>
+
+                    <div class="hero-actions">
+                        <button class="primary-btn">Смотреть каталог</button>
+                        <button class="secondary-btn">Мой список</button>
+                    </div>
+                </div>
+
+                <div class="hero-image">
+                    <div class="hero-placeholder">Баннер</div>
+                </div>
+            </section>
+
+            <section class="content-section">
+                <div class="section-head">
+                    <h2>Популярное аниме</h2>
+                    <button class="see-all-btn">Смотреть все</button>
+                </div>
+
+                <div class="slider-wrapper">
+                    <button class="slider-arrow left" data-target="popularAnime">‹</button>
+                    <div id="popularAnime" class="anime-row"></div>
+                    <button class="slider-arrow right" data-target="popularAnime">›</button>
+                </div>
+            </section>
+
+            <section class="content-section">
+                <div class="section-head">
+                    <h2>Новинки сезона</h2>
+                    <button class="see-all-btn">Смотреть все</button>
+                </div>
+
+                <div class="slider-wrapper">
+                    <button class="slider-arrow left" data-target="newAnime">‹</button>
+                    <div id="newAnime" class="anime-row"></div>
+                    <button class="slider-arrow right" data-target="newAnime">›</button>
+                </div>
+            </section>
+
+            <section class="content-section">
+                <div class="section-head">
+                    <h2>Результаты поиска</h2>
+                </div>
+
+                <div id="searchResults" class="anime-row search-row-results"></div>
+            </section>
+        </main>
+
+        <footer class="footer glass">
+            <div class="footer-brand">
+                <div class="logo">Anime<span>Track</span></div>
+                <p>© 2024 Все права защищены</p>
+            </div>
+
+            <div class="footer-links">
+                <a href="#">О проекте</a>
+                <a href="#">Правила</a>
+                <a href="#">Контакты</a>
+            </div>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
