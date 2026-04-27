@@ -25,7 +25,8 @@ function setupProfileButton() {
             return;
         }
 
-        alert(`Вы вошли как ${user.nickname || user.email || "пользователь"}`);
+
+        alert(`Вы вошли как ${user.nickname}`);
     });
 }
 

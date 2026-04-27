@@ -107,7 +107,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error(errorMessage);
             }
 
-            localStorage.setItem("authUser", JSON.stringify(data));
+            localStorage.setItem("authUser", JSON.stringify({
+                userId: data.userId,
+                nickname: data.nickname
+            }));
 
             showMessage("Вход выполнен успешно.", "success");
 
