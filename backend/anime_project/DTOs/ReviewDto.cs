@@ -3,7 +3,12 @@
 public class ReviewDto
 {
     public int ReviewId { get; set; }
+    public int AnimeId { get; set; }
+    public int UserId { get; set; }
+
+    public string? UserNickname { get; set; }
+
     public string Text { get; set; } = null!;
     public int Score { get; set; }
-    public string UserNickname { get; set; } = null!;
+    public DateTime CreatedAt { get; set; }
 }

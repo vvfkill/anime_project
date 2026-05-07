@@ -31,7 +31,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<IAnimeService, AnimeService>();
 builder.Services.AddScoped<IBookmarkService, BookmarkService>();
 builder.Services.AddScoped<IUserService, UserService>();
-
+builder.Services.AddScoped<IReviewService, ReviewService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

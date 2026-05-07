@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using anime_project.Data;
-using anime_project.Models;
 using anime_project.DTOs;
+using anime_project.Services;
 
 namespace anime_project.Controllers;
 
@@ -10,63 +8,45 @@ namespace anime_project.Controllers;
 [Route("api/[controller]")]
 public class ReviewsController : ControllerBase
 {
-    private readonly AnimeProjectContext _context;
+    private readonly IReviewService _reviewService;
 
-    public ReviewsController(AnimeProjectContext context)
+    public ReviewsController(IReviewService reviewService)
     {
-        _context = context;
+        _reviewService = reviewService;
     }
 
     [HttpPost]
     public async Task<IActionResult> Create(CreateReviewDto dto)
     {
-        if (dto.Score < 1 || dto.Score > 10)
-            return BadRequest("Score must be between 1 and 10");
-
-        var review = new review
+        try
         {
-            user_id = dto.UserId,
-            anime_id = dto.AnimeId,
-            text = dto.Text,
-            score = dto.Score,
-            created_at = DateTime.Now
-        };
-
-        _context.reviews.Add(review);
-        await _context.SaveChangesAsync();
-
-        return Ok("Review created");
+            await _reviewService.CreateReviewAsync(dto);
+            return Ok(new { message = "Review created" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpGet("/api/anime/{animeId}/reviews")]
     public async Task<IActionResult> GetByAnime(int animeId)
     {
-        var reviews = await _context.reviews
-            .Where(r => r.anime_id == animeId)
-            .Include(r => r.user)
-            .Select(r => new
-            {
-                r.review_id,
-                r.text,
-                r.score,
-                user = r.user.nickname
-            })
-            .ToListAsync();
-
+        var reviews = await _reviewService.GetReviewsByAnimeAsync(animeId);
         return Ok(reviews);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var review = await _context.reviews.FindAsync(id);
-
-        if (review == null)
-            return NotFound();
-
-        _context.reviews.Remove(review);
-        await _context.SaveChangesAsync();
-
-        return Ok("Deleted");
+        try
+        {
+            await _reviewService.DeleteReviewAsync(id);
+            return Ok(new { message = "Deleted" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }
