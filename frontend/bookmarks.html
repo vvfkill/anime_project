@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AnimeTrack — Закладки</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="page-shell">
+        <header class="header glass">
+            <div class="logo">Anime<span>Track</span></div>
+
+            <nav class="nav">
+                <a href="index.html">Главная</a>
+                <a href="#">Каталог</a>
+                <a href="#">Список</a>
+                <a href="bookmarks.html" class="active">Закладки</a>
+                <a href="#">Отзывы</a>
+            </nav>
+
+            <div class="header-search glass">
+                <input type="text" placeholder="Поиск аниме..." />
+                <button>⌕</button>
+            </div>
+
+            <button type="button" class="profile-btn glass">
+                <span class="profile-icon">◉</span>
+                <span>Профиль</span>
+            </button>
+        </header>
+
+        <main class="bookmarks-layout">
+            <aside class="filters-panel glass">
+                <h2>Фильтры</h2>
+
+                <div class="filter-group">
+                    <h3>Тип</h3>
+                    <label><input type="checkbox"> TV Сериал</label>
+                    <label><input type="checkbox"> Фильм</label>
+                    <label><input type="checkbox"> OVA</label>
+                    <label><input type="checkbox"> ONA</label>
+                    <label><input type="checkbox"> Спешл</label>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Жанры</h3>
+                    <label><input type="checkbox"> Экшен</label>
+                    <label><input type="checkbox"> Приключения</label>
+                    <label><input type="checkbox"> Комедия</label>
+                    <label><input type="checkbox"> Драма</label>
+                    <label><input type="checkbox"> Фэнтези</label>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Рейтинг</h3>
+                    <button class="filter-chip">★ 9 и выше</button>
+                    <button class="filter-chip">★ 8 и выше</button>
+                    <button class="filter-chip">★ 7 и выше</button>
+                    <button class="filter-chip">★ 6 и выше</button>
+                </div>
+
+                <button class="primary-btn wide-btn">Применить фильтры</button>
+            </aside>
+
+            <section class="bookmarks-content">
+                <div class="section-header-row">
+                    <div>
+                        <h1>♡ Закладки</h1>
+                        <p id="bookmarksCount">Загрузка...</p>
+                    </div>
+
+                    <div class="sort-box glass">
+                        <span>Сортировать:</span>
+                        <select id="sortSelect">
+                            <option value="date">Дата добавления</option>
+                            <option value="rating">Рейтинг</option>
+                            <option value="year">Год выпуска</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="tabs-line">
+                    <button class="tab-link active">Все</button>
+                    <button class="tab-link">Аниме</button>
+                    <button class="tab-link">Сериалы</button>
+                    <button class="tab-link">Фильмы</button>
+                    <button class="tab-link">OVA</button>
+                    <button class="tab-link">ONA</button>
+                    <button class="tab-link">Спешлы</button>
+                </div>
+
+                <div id="bookmarksGrid" class="bookmarks-grid">
+                    <p>Загрузка закладок...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="bookmarks.js"></script>
+</body>
+</html>

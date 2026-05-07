@@ -2,5 +2,6 @@
 
 public class AddBookmarkDto
 {
+    public int UserId { get; set; }
     public int AnimeId { get; set; }
 }

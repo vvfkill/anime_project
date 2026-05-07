@@ -1,5 +1,6 @@
 const API_URL = "https://localhost:7241/api/anime";
 const REVIEWS_URL = "https://localhost:7241/api/anime";
+const BOOKMARKS_URL = "https://localhost:7241/api/bookmarks";
 
 const animeDetails = document.getElementById("animeDetails");
 const reviewsContainer = document.getElementById("reviewsContainer");
@@ -126,13 +127,22 @@ function setupAnimeActionButtons(anime) {
         });
     }
 
-    if (addToBookmarksBtn) {
-        addToBookmarksBtn.addEventListener("click", () => {
-            if (!requireAuth()) return;
+   if (addToBookmarksBtn) {
+    const animeId = getAnimeIdFromUrl();
 
-            alert(`Аниме "${anime.titleRu || anime.titleOriginal}" можно добавлять в закладки. Следующим шагом подключим POST в API.`);
-        });
-    }
+    checkBookmarkStatus(animeId).then(isBookmarked => {
+        if (isBookmarked) {
+            addToBookmarksBtn.textContent = "В закладках";
+            addToBookmarksBtn.disabled = true;
+        }
+    });
+
+    addToBookmarksBtn.addEventListener("click", async () => {
+        if (!requireAuth()) return;
+
+        await addToBookmarks(animeId);
+    });
+}
 
     if (rateAnimeBtn) {
         rateAnimeBtn.addEventListener("click", () => {
@@ -141,6 +151,14 @@ function setupAnimeActionButtons(anime) {
             alert(`Для "${anime.titleRu || anime.titleOriginal}" можно будет ставить оценку. Следующим шагом подключим форму и API.`);
         });
     }
+}
+
+function getCurrentUserId() {
+    const user = getCurrentUser();
+
+    if (!user) return null;
+
+    return user.userId || user.user_id || user.id;
 }
 
 function renderReviews(reviews) {
@@ -197,6 +215,65 @@ async function loadReviews() {
         renderReviews(reviews);
     } catch (error) {
         reviewsContainer.innerHTML = `<p>Ошибка: ${error.message}</p>`;
+    }
+}
+
+async function checkBookmarkStatus(animeId) {
+    const userId = getCurrentUserId();
+
+    if (!userId || !animeId) return false;
+
+    try {
+        const response = await fetch(`${BOOKMARKS_URL}/check?userId=${userId}&animeId=${animeId}`);
+
+        if (!response.ok) return false;
+
+        const data = await response.json();
+        return data.isBookmarked;
+    } catch (error) {
+        console.error("Ошибка проверки закладки:", error);
+        return false;
+    }
+}
+
+async function addToBookmarks(animeId) {
+    const userId = getCurrentUserId();
+
+    if (!userId) {
+        alert("Сначала войдите в аккаунт");
+        window.location.href = "login.html";
+        return;
+    }
+
+    try {
+        const response = await fetch(BOOKMARKS_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                userId: userId,
+                animeId: Number(animeId)
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Не удалось добавить в закладки");
+            return;
+        }
+
+        alert(data.message || "Аниме добавлено в закладки");
+
+        const btn = document.getElementById("addToBookmarksBtn");
+        if (btn) {
+            btn.textContent = "В закладках";
+            btn.disabled = true;
+        }
+    } catch (error) {
+        console.error("Ошибка добавления в закладки:", error);
+        alert("Ошибка соединения с сервером");
     }
 }
 

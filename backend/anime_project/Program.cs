@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using anime_project.Data;
 using System.Text.Json.Serialization;
+using anime_project.Services;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +29,7 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddScoped<IBookmarkService, BookmarkService>();
 // 🔹 Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

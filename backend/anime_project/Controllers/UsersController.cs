@@ -217,58 +217,6 @@ public class UsersController : ControllerBase
 
         return Ok("Deleted");
     }
-
-    [HttpGet("{id}/bookmarks")]
-    public async Task<IActionResult> GetBookmarks(int id)
-    {
-        var bookmarks = await _context.bookmarks
-            .Where(b => b.user_id == id)
-            .Include(b => b.anime)
-            .Select(b => new BookmarkDto
-            {
-                AnimeId = b.anime_id,
-                Title = b.anime.title_original,
-                PosterUrl = b.anime.poster_url
-            })
-            .ToListAsync();
-
-        return Ok(bookmarks);
-    }
-
-    [HttpPost("{id}/bookmarks")]
-    public async Task<IActionResult> AddBookmark(int id, AddBookmarkDto dto)
-    {
-        var exists = await _context.bookmarks
-            .AnyAsync(b => b.user_id == id && b.anime_id == dto.AnimeId);
-
-        if (exists)
-            return Conflict("Bookmark already exists");
-
-        var bookmark = new bookmark
-        {
-            user_id = id,
-            anime_id = dto.AnimeId
-        };
-
-        _context.bookmarks.Add(bookmark);
-        await _context.SaveChangesAsync();
-
-        return Ok("Bookmark added");
-    }
-
-    [HttpDelete("{id}/bookmarks/{animeId}")]
-    public async Task<IActionResult> DeleteBookmark(int id, int animeId)
-    {
-        var bookmark = await _context.bookmarks
-            .FirstOrDefaultAsync(b => b.user_id == id && b.anime_id == animeId);
-
-        if (bookmark == null)
-            return NotFound("Bookmark not found");
-
-        _context.bookmarks.Remove(bookmark);
-        await _context.SaveChangesAsync();
-
-        return Ok("Bookmark deleted");
-    }
-
 }
+
+    
