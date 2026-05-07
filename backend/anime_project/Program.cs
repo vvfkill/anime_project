@@ -4,20 +4,19 @@ using System.Text.Json.Serialization;
 using anime_project.Services;
 
 
+
 var builder = WebApplication.CreateBuilder(args);
 
-// 🔹 Controllers + настройка JSON (чтобы не было циклов)
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
 
-// 🔹 Подключение к PostgreSQL
+
 builder.Services.AddDbContext<AnimeProjectContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 🔹 CORS (разрешаем фронту подключаться)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("frontend", policy =>
@@ -29,14 +28,17 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddScoped<IAnimeService, AnimeService>();
 builder.Services.AddScoped<IBookmarkService, BookmarkService>();
-// 🔹 Swagger
+
+
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// 🔹 Swagger только в dev
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -45,7 +47,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// 🔹 Включаем CORS
+
 app.UseCors("frontend");
 
 app.UseAuthorization();
