@@ -6,7 +6,7 @@
     <title>AnimeTrack — Закладки</title>
     <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body class="bookmarks-page">
     <div class="page-shell">
         <header class="header glass">
             <div class="logo">Anime<span>Track</span></div>
@@ -19,15 +19,16 @@
                 <a href="#">Отзывы</a>
             </nav>
 
-            <div class="header-search glass">
-                <input type="text" placeholder="Поиск аниме..." />
-                <button>⌕</button>
-            </div>
+            <div class="header-actions">
+                <div class="header-search glass">
+                    <input type="text" placeholder="Поиск аниме..." />
+                </div>
 
-            <button type="button" class="profile-btn glass">
-                <span class="profile-icon">◉</span>
-                <span>Профиль</span>
-            </button>
+                <button type="button" class="profile-btn glass">
+                    <span class="profile-icon">◉</span>
+                    <span>Профиль</span>
+                </button>
+            </div>
         </header>
 
         <main class="bookmarks-layout">
@@ -36,31 +37,37 @@
 
                 <div class="filter-group">
                     <h3>Тип</h3>
-                    <label><input type="checkbox"> TV Сериал</label>
-                    <label><input type="checkbox"> Фильм</label>
-                    <label><input type="checkbox"> OVA</label>
-                    <label><input type="checkbox"> ONA</label>
-                    <label><input type="checkbox"> Спешл</label>
+                    <label><input type="checkbox" value="TV Сериал"> TV Сериал</label>
+                    <label><input type="checkbox" value="Фильм"> Фильм</label>
+                    <label><input type="checkbox" value="OVA"> OVA</label>
+                    <label><input type="checkbox" value="ONA"> ONA</label>
+                    <label><input type="checkbox" value="Спешл"> Спешл</label>
                 </div>
 
                 <div class="filter-group">
                     <h3>Жанры</h3>
-                    <label><input type="checkbox"> Экшен</label>
-                    <label><input type="checkbox"> Приключения</label>
-                    <label><input type="checkbox"> Комедия</label>
-                    <label><input type="checkbox"> Драма</label>
-                    <label><input type="checkbox"> Фэнтези</label>
+                    <label><input type="checkbox" value="Экшен"> Экшен</label>
+                    <label><input type="checkbox" value="Приключения"> Приключения</label>
+                    <label><input type="checkbox" value="Комедия"> Комедия</label>
+                    <label><input type="checkbox" value="Драма"> Драма</label>
+                    <label><input type="checkbox" value="Фэнтези"> Фэнтези</label>
                 </div>
 
                 <div class="filter-group">
                     <h3>Рейтинг</h3>
-                    <button class="filter-chip">★ 9 и выше</button>
-                    <button class="filter-chip">★ 8 и выше</button>
-                    <button class="filter-chip">★ 7 и выше</button>
-                    <button class="filter-chip">★ 6 и выше</button>
+                    <button type="button" class="filter-chip" data-rating="9">★ 9 и выше</button>
+                    <button type="button" class="filter-chip" data-rating="8">★ 8 и выше</button>
+                    <button type="button" class="filter-chip" data-rating="7">★ 7 и выше</button>
+                    <button type="button" class="filter-chip" data-rating="6">★ 6 и выше</button>
                 </div>
 
-                <button class="primary-btn wide-btn">Применить фильтры</button>
+                <button type="button" id="applyFiltersBtn" class="primary-btn wide-btn">
+                    Применить фильтры
+                </button>
+
+                <button type="button" id="resetFiltersBtn" class="secondary-btn wide-btn">
+                    Сбросить все
+                </button>
             </aside>
 
             <section class="bookmarks-content">
@@ -76,18 +83,19 @@
                             <option value="date">Дата добавления</option>
                             <option value="rating">Рейтинг</option>
                             <option value="year">Год выпуска</option>
+                            <option value="title">Название</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="tabs-line">
-                    <button class="tab-link active">Все</button>
-                    <button class="tab-link">Аниме</button>
-                    <button class="tab-link">Сериалы</button>
-                    <button class="tab-link">Фильмы</button>
-                    <button class="tab-link">OVA</button>
-                    <button class="tab-link">ONA</button>
-                    <button class="tab-link">Спешлы</button>
+                    <button type="button" class="tab-link active" data-type="all">Все</button>
+                    <button type="button" class="tab-link" data-type="Аниме">Аниме</button>
+                    <button type="button" class="tab-link" data-type="TV Сериал">Сериалы</button>
+                    <button type="button" class="tab-link" data-type="Фильм">Фильмы</button>
+                    <button type="button" class="tab-link" data-type="OVA">OVA</button>
+                    <button type="button" class="tab-link" data-type="ONA">ONA</button>
+                    <button type="button" class="tab-link" data-type="Спешл">Спешлы</button>
                 </div>
 
                 <div id="bookmarksGrid" class="bookmarks-grid">
