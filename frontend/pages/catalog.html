@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AnimeTrack — Каталог</title>
+    <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body class="catalog-page">
+    <div class="page-shell">
+        <header class="header glass">
+            <div class="logo">Anime<span>Track</span></div>
+
+            <nav class="nav">
+                <a href="index.html">Главная</a>
+                <a href="catalog.html" class="active">Каталог</a>
+                <a href="list.html">Список</a>
+                <a href="bookmarks.html">Закладки</a>
+                <a href="#">Отзывы</a>
+            </nav>
+
+            <button type="button" class="profile-btn glass">
+                <span class="profile-icon">◉</span>
+                <span>Профиль</span>
+            </button>
+        </header>
+
+        <main class="catalog-layout">
+            <aside class="catalog-filters glass">
+                <h2>Фильтры</h2>
+
+                <div class="catalog-filter-group">
+                    <h3>Поиск</h3>
+                    <input id="catalogSearchInput" class="catalog-input" type="text" placeholder="Название аниме..." />
+                </div>
+
+                <div class="catalog-filter-group">
+                    <h3>Год выпуска</h3>
+                    <input id="catalogYearInput" class="catalog-input" type="number" placeholder="Например, 2002" />
+                </div>
+
+                <div class="catalog-filter-group">
+                    <h3>Рейтинг</h3>
+                    <div class="catalog-rating-grid">
+                        <button type="button" class="catalog-rating-chip" data-rating="9">★ 9+</button>
+                        <button type="button" class="catalog-rating-chip" data-rating="8">★ 8+</button>
+                        <button type="button" class="catalog-rating-chip" data-rating="7">★ 7+</button>
+                        <button type="button" class="catalog-rating-chip" data-rating="6">★ 6+</button>
+                    </div>
+                </div>
+
+                <div class="catalog-filter-group">
+                    <h3>На странице</h3>
+                    <select id="catalogPageSizeSelect" class="catalog-input">
+                        <option value="8">8 аниме</option>
+                        <option value="12" selected>12 аниме</option>
+                        <option value="20">20 аниме</option>
+                    </select>
+                </div>
+
+                <button id="applyCatalogFiltersBtn" type="button" class="primary-btn wide-btn">
+                    Применить
+                </button>
+
+                <button id="resetCatalogFiltersBtn" type="button" class="secondary-btn wide-btn">
+                    Сбросить
+                </button>
+            </aside>
+
+            <section class="catalog-content">
+                <div class="catalog-head">
+                    <div>
+                        <h1>Каталог аниме</h1>
+                        <p id="catalogCount">Загрузка...</p>
+                    </div>
+
+                    <div class="sort-box glass">
+                        <span>Сортировать:</span>
+                        <select id="catalogSortSelect">
+                            <option value="default">По умолчанию</option>
+                            <option value="rating">По рейтингу</option>
+                            <option value="title">По названию</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="catalogGrid" class="catalog-grid">
+                    <p>Загрузка каталога...</p>
+                </div>
+
+                <div class="catalog-pagination">
+                    <button id="prevPageBtn" type="button" class="secondary-btn">Назад</button>
+                    <span id="pageInfo">Страница 1</span>
+                    <button id="nextPageBtn" type="button" class="secondary-btn">Вперёд</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="../js/catalog.js"></script>
+</body>
+</html>

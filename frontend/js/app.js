@@ -133,5 +133,11 @@ document.querySelectorAll(".slider-arrow").forEach(button => {
     });
 });
 
+document.querySelectorAll(".see-all-btn").forEach(button => {
+    button.addEventListener("click", () => {
+        window.location.href = "catalog.html";
+    });
+});
+
 setupProfileButton();
 loadHomePage();
