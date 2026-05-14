@@ -3,9 +3,13 @@ const BOOKMARKS_URL = "https://localhost:7241/api/bookmarks";
 const bookmarksGrid = document.getElementById("bookmarksGrid");
 const bookmarksCount = document.getElementById("bookmarksCount");
 const sortSelect = document.getElementById("sortSelect");
-const ratingFilterSelect = document.getElementById("ratingFilterSelect");
 const applyFiltersBtn = document.getElementById("applyFiltersBtn");
 const resetFiltersBtn = document.getElementById("resetFiltersBtn");
+const yearFromInput = document.getElementById("yearFromInput");
+const yearToInput = document.getElementById("yearToInput");
+
+let currentYearFrom = 1950;
+let currentYearTo = 2026;
 
 let bookmarks = [];
 
@@ -32,7 +36,7 @@ function requireAuth() {
 
     if (!user) {
         alert("Сначала войдите в аккаунт");
-        window.location.href = "login.html";
+        window.location.href = "../pages/login.html";
         return false;
     }
 
@@ -48,7 +52,7 @@ function setupProfileButton() {
         const user = getCurrentUser();
 
         if (!user) {
-            window.location.href = "login.html";
+            window.location.href = "../pages/login.html";
             return;
         }
 
@@ -63,27 +67,38 @@ function getBookmarkTitle(item) {
 function getBookmarkGenres(item) {
     if (Array.isArray(item.genres)) return item.genres;
     if (typeof item.genre === "string") return [item.genre];
-    if (typeof item.genres === "string") return item.genres.split(",").map(g => g.trim());
+    if (typeof item.genres === "string") {
+        return item.genres.split(",").map(genre => genre.trim());
+    }
 
     return [];
 }
 
 function getFilteredBookmarks() {
     return bookmarks.filter(item => {
+        const typeValue = String(item.type || "").toLowerCase();
+
         const typeMatches =
             currentType === "all" ||
-            String(item.type || "").toLowerCase().includes(currentType.toLowerCase());
+            typeValue.includes(currentType.toLowerCase());
 
         const itemGenres = getBookmarkGenres(item);
+
         const genreMatches =
             currentGenre === "all" ||
-            itemGenres.some(g => g.toLowerCase() === currentGenre.toLowerCase());
+            itemGenres.some(genre => genre.toLowerCase() === currentGenre.toLowerCase());
 
         const ratingMatches =
             currentRating === "all" ||
             Number(item.averageRating || 0) >= Number(currentRating);
 
-        return typeMatches && genreMatches && ratingMatches;
+        const year = Number(item.releaseYear || 0);
+
+        const yearMatches =
+            !year ||
+            (year >= currentYearFrom && year <= currentYearTo);
+
+        return typeMatches && genreMatches && ratingMatches && yearMatches;
     });
 }
 
@@ -112,6 +127,7 @@ function getSortedBookmarks(list) {
 function applyCurrentView() {
     const filtered = getFilteredBookmarks();
     const sorted = getSortedBookmarks(filtered);
+
     renderBookmarks(sorted);
 }
 
@@ -162,7 +178,7 @@ function renderBookmarks(list) {
     bookmarksCount.textContent = `Найдено: ${list.length}`;
 
     bookmarksGrid.innerHTML = list.map(item => {
-        const fallbackPoster = "images/no-poster.jpg";
+        const fallbackPoster = "../images/no-poster.jpg";
         const poster =
             item.posterUrl && item.posterUrl.trim() !== ""
                 ? item.posterUrl
@@ -203,10 +219,26 @@ function openAnime(animeId) {
     window.location.href = `anime.html?id=${animeId}`;
 }
 
+function syncTypeControls(type) {
+    document.querySelectorAll(".tab-link").forEach(button => {
+        button.classList.toggle("active", button.dataset.type === type);
+    });
+
+    document.querySelectorAll('input[name="bookmarkType"]').forEach(input => {
+        input.checked = input.value === type;
+    });
+}
+
+function setCurrentType(type) {
+    currentType = type;
+    syncTypeControls(type);
+    applyCurrentView();
+}
+
 function setupFilters() {
     document.querySelectorAll('input[name="bookmarkType"]').forEach(input => {
         input.addEventListener("change", () => {
-            currentType = input.value;
+            setCurrentType(input.value);
         });
     });
 
@@ -216,11 +248,22 @@ function setupFilters() {
         });
     });
 
-    if (ratingFilterSelect) {
-        ratingFilterSelect.addEventListener("change", () => {
-            currentRating = ratingFilterSelect.value;
+    document.querySelectorAll(".tab-link").forEach(button => {
+        button.addEventListener("click", () => {
+            setCurrentType(button.dataset.type);
         });
-    }
+    });
+
+    document.querySelectorAll(".filter-chip").forEach(button => {
+        button.addEventListener("click", () => {
+            document.querySelectorAll(".filter-chip").forEach(item => {
+                item.classList.remove("active");
+            });
+
+            button.classList.add("active");
+            currentRating = button.dataset.rating;
+        });
+    });
 
     if (sortSelect) {
         sortSelect.addEventListener("change", () => {
@@ -231,6 +274,9 @@ function setupFilters() {
 
     if (applyFiltersBtn) {
         applyFiltersBtn.addEventListener("click", () => {
+            currentYearFrom = Number(yearFromInput?.value || 1950);
+            currentYearTo = Number(yearToInput?.value || 2026);
+
             applyCurrentView();
         });
     }
@@ -242,14 +288,25 @@ function setupFilters() {
             currentRating = "all";
             currentSort = "date";
 
+            currentYearFrom = 1950;
+            currentYearTo = 2026;
+
+            if (yearFromInput) yearFromInput.value = "1950";
+            if (yearToInput) yearToInput.value = "2026";
+
             const typeAll = document.querySelector('input[name="bookmarkType"][value="all"]');
             const genreAll = document.querySelector('input[name="bookmarkGenre"][value="all"]');
 
             if (typeAll) typeAll.checked = true;
             if (genreAll) genreAll.checked = true;
-            if (ratingFilterSelect) ratingFilterSelect.value = "all";
+
+            document.querySelectorAll(".filter-chip").forEach(item => {
+                item.classList.remove("active");
+            });
+
             if (sortSelect) sortSelect.value = "date";
 
+            syncTypeControls("all");
             applyCurrentView();
         });
     }
