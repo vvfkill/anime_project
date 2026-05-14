@@ -3,8 +3,8 @@ const CATALOG_API_URL = "https://localhost:7241/api/anime";
 const catalogGrid = document.getElementById("catalogGrid");
 const catalogCount = document.getElementById("catalogCount");
 const catalogSearchInput = document.getElementById("catalogSearchInput");
-const catalogYearInput = document.getElementById("catalogYearInput");
-const catalogPageSizeSelect = document.getElementById("catalogPageSizeSelect");
+const catalogYearFromInput = document.getElementById("catalogYearFromInput");
+const catalogYearToInput = document.getElementById("catalogYearToInput");
 const catalogSortSelect = document.getElementById("catalogSortSelect");
 
 const applyCatalogFiltersBtn = document.getElementById("applyCatalogFiltersBtn");
@@ -16,7 +16,8 @@ const pageInfo = document.getElementById("pageInfo");
 let currentPage = 1;
 let currentPageSize = 12;
 let currentSearch = "";
-let currentYear = "";
+let currentYearFrom = "";
+let currentYearTo = "";
 let currentRating = "";
 let currentSort = "default";
 let totalPages = 1;
@@ -76,8 +77,8 @@ function buildCatalogUrl() {
         params.set("search", currentSearch);
     }
 
-    if (currentYear) {
-        params.set("year", currentYear);
+    if (currentYearFrom && currentYearTo && currentYearFrom === currentYearTo) {
+    params.set("year", currentYearFrom);
     }
 
     if (currentRating) {
@@ -181,26 +182,28 @@ function updatePagination(data) {
 function applyFilters() {
     currentPage = 1;
     currentSearch = catalogSearchInput.value.trim();
-    currentYear = catalogYearInput.value.trim();
-    currentPageSize = Number(catalogPageSizeSelect.value || 12);
-
+    currentYearFrom = catalogYearFromInput.value.trim();
+    currentYearTo = catalogYearToInput.value.trim();
+    currentPageSize = 12;
     loadCatalog();
 }
 
 function resetFilters() {
     currentPage = 1;
     currentSearch = "";
-    currentYear = "";
+    currentYearFrom = "";
+    currentYearTo = "";
+    currentPageSize = 12;
     currentRating = "";
     currentSort = "default";
-    currentPageSize = 12;
+    
 
     catalogSearchInput.value = "";
-    catalogYearInput.value = "";
-    catalogPageSizeSelect.value = "12";
+    catalogYearFromInput.value = "1950";
+    catalogYearToInput.value = "2026";
     catalogSortSelect.value = "default";
 
-    document.querySelectorAll(".catalog-rating-chip").forEach(button => {
+    document.querySelectorAll(".filter-chip").forEach(button => {
         button.classList.remove("active");
     });
 
@@ -223,7 +226,7 @@ function setupCatalogEvents() {
         }
     });
 
-    document.querySelectorAll(".catalog-rating-chip").forEach(button => {
+    document.querySelectorAll(".filter-chip").forEach(button => {
         button.addEventListener("click", () => {
             document.querySelectorAll(".catalog-rating-chip").forEach(item => {
                 item.classList.remove("active");

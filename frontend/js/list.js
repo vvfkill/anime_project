@@ -5,9 +5,11 @@ const listCount = document.getElementById("listCount");
 const listUserName = document.getElementById("listUserName");
 const listUserSubtext = document.getElementById("listUserSubtext");
 const listAvatar = document.getElementById("listAvatar");
-const listSearchInput = document.getElementById("listSearchInput");
-const listSortSelect = document.getElementById("listSortSelect");
+const applyListFiltersBtn = document.getElementById("applyListFiltersBtn");
 const resetListFiltersBtn = document.getElementById("resetListFiltersBtn");
+
+const listYearFromInput = document.getElementById("listYearFromInput");
+const listYearToInput = document.getElementById("listYearToInput");
 
 const totalCount = document.getElementById("totalCount");
 const watchingCount = document.getElementById("watchingCount");
@@ -26,7 +28,11 @@ const LIST_STATUSES = [
 
 let userList = [];
 let currentStatus = "all";
-let currentSearch = "";
+let currentType = "all";
+let currentGenres = [];
+let currentRating = "all";
+let currentYearFrom = 1950;
+let currentYearTo = 2026;
 let currentSort = "updated";
 
 function getCurrentUser() {
@@ -110,18 +116,52 @@ function setupUserInfo() {
     if (listAvatar) listAvatar.textContent = name.trim().charAt(0).toUpperCase() || "A";
 }
 
+function getItemGenres(item) {
+    if (Array.isArray(item.genres)) return item.genres;
+
+    if (typeof item.genre === "string") {
+        return [item.genre];
+    }
+
+    if (typeof item.genres === "string") {
+        return item.genres.split(",").map(genre => genre.trim());
+    }
+
+    return [];
+}
+
 function getFilteredList() {
-    const search = currentSearch.toLowerCase();
-
     return userList
-        .filter(item => currentStatus === "all" || item.status === currentStatus)
         .filter(item => {
-            if (!search) return true;
+            const statusMatches =
+                currentStatus === "all" ||
+                item.status === currentStatus;
 
-            const title = getAnimeTitle(item).toLowerCase();
-            const original = (item.titleOriginal || "").toLowerCase();
+            const typeMatches =
+                currentType === "all" ||
+                String(item.type || "").toLowerCase().includes(currentType.toLowerCase());
 
-            return title.includes(search) || original.includes(search);
+            const itemGenres = getItemGenres(item);
+
+            const genreMatches =
+                currentGenres.length === 0 ||
+                currentGenres.some(selectedGenre =>
+                    itemGenres.some(itemGenre =>
+                        itemGenre.toLowerCase() === selectedGenre.toLowerCase()
+                    )
+                );
+
+            const ratingMatches =
+                currentRating === "all" ||
+                Number(item.averageRating || 0) >= Number(currentRating);
+
+            const year = Number(item.releaseYear || 0);
+
+            const yearMatches =
+                !year ||
+                (year >= currentYearFrom && year <= currentYearTo);
+
+            return statusMatches && typeMatches && genreMatches && ratingMatches && yearMatches;
         })
         .sort((a, b) => {
             if (currentSort === "title") {
@@ -356,26 +396,71 @@ function setupListEvents() {
             setCurrentStatus(button.dataset.status);
         });
     });
+    document.querySelectorAll('input[name="listType"]').forEach(input => {
+    input.addEventListener("change", () => {
+        const checkedTypes = Array.from(document.querySelectorAll('input[name="listType"]:checked'))
+            .map(item => item.value);
 
-    document.querySelectorAll(".status-radio").forEach(input => {
-        input.addEventListener("change", () => {
-            setCurrentStatus(input.value);
-        });
+        currentType = checkedTypes.length > 0 ? checkedTypes[0] : "all";
     });
+});
 
-    if (listSearchInput) {
-        listSearchInput.addEventListener("input", () => {
-            currentSearch = listSearchInput.value.trim();
-            renderUserList();
-        });
-    }
+document.querySelectorAll('input[name="listGenre"]').forEach(input => {
+    input.addEventListener("change", () => {
+        currentGenres = Array.from(document.querySelectorAll('input[name="listGenre"]:checked'))
+            .map(item => item.value);
+    });
+});
 
-    if (listSortSelect) {
-        listSortSelect.addEventListener("change", () => {
-            currentSort = listSortSelect.value;
-            renderUserList();
+document.querySelectorAll(".filter-chip").forEach(button => {
+    button.addEventListener("click", () => {
+        document.querySelectorAll(".filter-chip").forEach(item => {
+            item.classList.remove("active");
         });
-    }
+
+        button.classList.add("active");
+        currentRating = button.dataset.rating;
+    });
+});
+
+if (applyListFiltersBtn) {
+    applyListFiltersBtn.addEventListener("click", () => {
+        currentYearFrom = Number(listYearFromInput?.value || 1950);
+        currentYearTo = Number(listYearToInput?.value || 2026);
+
+        renderUserList();
+    });
+}
+
+if (resetListFiltersBtn) {
+    resetListFiltersBtn.addEventListener("click", () => {
+        currentStatus = "all";
+        currentType = "all";
+        currentGenres = [];
+        currentRating = "all";
+        currentYearFrom = 1950;
+        currentYearTo = 2026;
+        currentSort = "updated";
+
+        document.querySelectorAll('input[name="listType"]').forEach(input => {
+            input.checked = input.value === "TV Сериал";
+        });
+
+        document.querySelectorAll('input[name="listGenre"]').forEach(input => {
+            input.checked = false;
+        });
+
+        document.querySelectorAll(".filter-chip").forEach(button => {
+            button.classList.remove("active");
+        });
+
+        if (listYearFromInput) listYearFromInput.value = "1950";
+        if (listYearToInput) listYearToInput.value = "2026";
+
+        syncStatusControls("all");
+        renderUserList();
+    });
+}
 
     if (resetListFiltersBtn) {
         resetListFiltersBtn.addEventListener("click", () => {
