@@ -49,14 +49,24 @@ public class ReviewService : IReviewService
         return await _context.reviews
             .Where(r => r.anime_id == animeId)
             .Include(r => r.user)
+            .Include(r => r.anime)
             .AsNoTracking()
             .OrderByDescending(r => r.created_at)
             .Select(r => new ReviewDto
             {
                 ReviewId = r.review_id,
+
                 AnimeId = r.anime_id,
+                AnimeTitleRu = r.anime.title_ru,
+                AnimeTitleOriginal = r.anime.title_original,
+                AnimePosterUrl = r.anime.poster_url,
+                AnimeReleaseYear = r.anime.release_year,
+                AnimeType = r.anime.type,
+                AnimeAverageRating = r.anime.average_rating,
+
                 UserId = r.user_id,
                 UserNickname = r.user.nickname,
+
                 Text = r.text,
                 Score = r.score,
                 CreatedAt = r.created_at
@@ -74,5 +84,34 @@ public class ReviewService : IReviewService
 
         _context.reviews.Remove(review);
         await _context.SaveChangesAsync();
+    }
+
+    public async Task<List<ReviewDto>> GetAllReviewsAsync()
+    {
+        return await _context.reviews
+            .Include(r => r.user)
+            .Include(r => r.anime)
+            .AsNoTracking()
+            .OrderByDescending(r => r.created_at)
+            .Select(r => new ReviewDto
+            {
+                ReviewId = r.review_id,
+
+                AnimeId = r.anime_id,
+                AnimeTitleRu = r.anime.title_ru,
+                AnimeTitleOriginal = r.anime.title_original,
+                AnimePosterUrl = r.anime.poster_url,
+                AnimeReleaseYear = r.anime.release_year,
+                AnimeType = r.anime.type,
+                AnimeAverageRating = r.anime.average_rating,
+
+                UserId = r.user_id,
+                UserNickname = r.user.nickname,
+
+                Text = r.text,
+                Score = r.score,
+                CreatedAt = r.created_at
+            })
+            .ToListAsync();
     }
 }

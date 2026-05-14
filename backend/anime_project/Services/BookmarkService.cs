@@ -44,7 +44,17 @@ public class BookmarkService : IBookmarkService
         _context.bookmarks.Add(bookmark);
         await _context.SaveChangesAsync();
     }
+    public async Task DeleteBookmarkAsync(int userId, int animeId)
+    {
+        var bookmark = await _context.bookmarks
+            .FirstOrDefaultAsync(b => b.user_id == userId && b.anime_id == animeId);
 
+        if (bookmark == null)
+            throw new Exception("Bookmark not found");
+
+        _context.bookmarks.Remove(bookmark);
+        await _context.SaveChangesAsync();
+    }
     public async Task RemoveBookmarkAsync(int userId, int animeId)
     {
         var bookmark = await _context.bookmarks

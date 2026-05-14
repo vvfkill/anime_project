@@ -15,6 +15,13 @@ public class ReviewsController : ControllerBase
         _reviewService = reviewService;
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var reviews = await _reviewService.GetAllReviewsAsync();
+        return Ok(reviews);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create(CreateReviewDto dto)
     {

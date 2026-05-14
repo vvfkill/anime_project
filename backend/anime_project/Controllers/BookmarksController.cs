@@ -30,11 +30,11 @@ catch (Exception ex) {
 }
 
 [HttpDelete]
-public async Task<IActionResult > RemoveBookmark([FromQuery] int userId, [FromQuery] int animeId) {
+public async Task<IActionResult > DeleteBookmark([FromQuery] int userId, [FromQuery] int animeId) {
     try
 
 {
-    await _bookmarkService.RemoveBookmarkAsync(userId, animeId);
+    await _bookmarkService.DeleteBookmarkAsync(userId, animeId);
     return Ok(new { message = "Аниме удалено из закладок" });
 }
 
