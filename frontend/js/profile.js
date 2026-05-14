@@ -51,9 +51,17 @@ function getPosterUrl(posterUrl) {
         return fallbackPoster;
     }
 
-    if (posterUrl.startsWith("http")) return posterUrl;
-    if (posterUrl.startsWith("../")) return posterUrl;
-    if (posterUrl.startsWith("images/")) return `../${posterUrl}`;
+    if (posterUrl.startsWith("http")) {
+        return posterUrl;
+    }
+
+    if (posterUrl.startsWith("../")) {
+        return posterUrl;
+    }
+
+    if (posterUrl.startsWith("images/")) {
+        return `../${posterUrl}`;
+    }
 
     return posterUrl;
 }

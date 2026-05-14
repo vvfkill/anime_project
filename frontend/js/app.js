@@ -17,10 +17,11 @@ function setupProfileButton() {
 
     if (!profileBtn) return;
 
-    profileBtn.addEventListener("click", () => {
+    profileBtn.addEventListener("click", (event) => {
         const user = getCurrentUser();
 
         if (!user) {
+            event.preventDefault();
             window.location.href = "login.html";
             return;
         }
@@ -40,12 +41,31 @@ async function fetchAnime(search = "", page = 1, pageSize = 12) {
     return await response.json();
 }
 
+function getPosterUrl(posterUrl) {
+    const fallbackPoster = "../images/no-poster.jpg";
+
+    if (!posterUrl || posterUrl.trim() === "") {
+        return fallbackPoster;
+    }
+
+    if (posterUrl.startsWith("http")) {
+        return posterUrl;
+    }
+
+    if (posterUrl.startsWith("../")) {
+        return posterUrl;
+    }
+
+    if (posterUrl.startsWith("images/")) {
+        return `../${posterUrl}`;
+    }
+
+    return posterUrl;
+}
+
 function createAnimeCard(anime) {
     const fallbackPoster = "../images/no-poster.jpg";
-    const poster =
-        anime.posterUrl && anime.posterUrl.trim() !== ""
-            ? anime.posterUrl
-            : fallbackPoster;
+    const poster = getPosterUrl(anime.posterUrl);
 
     return `
         <a class="anime-card-link" href="anime.html?id=${anime.animeId}">

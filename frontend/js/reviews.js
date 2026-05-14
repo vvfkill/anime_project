@@ -40,19 +40,26 @@ function setupProfileButton() {
     });
 }
 
-function getPosterUrl(review) {
+function getPosterUrl(posterUrl) {
     const fallbackPoster = "../images/no-poster.jpg";
-    const poster = review.animePosterUrl;
 
-    if (!poster || poster.trim() === "") {
+    if (!posterUrl || posterUrl.trim() === "") {
         return fallbackPoster;
     }
 
-    if (poster.startsWith("http")) return poster;
-    if (poster.startsWith("../")) return poster;
-    if (poster.startsWith("images/")) return `../${poster}`;
+    if (posterUrl.startsWith("http")) {
+        return posterUrl;
+    }
 
-    return poster;
+    if (posterUrl.startsWith("../")) {
+        return posterUrl;
+    }
+
+    if (posterUrl.startsWith("images/")) {
+        return `../${posterUrl}`;
+    }
+
+    return posterUrl;
 }
 
 function getAnimeTitle(review) {
@@ -151,7 +158,7 @@ function renderReviews() {
 
     reviewsList.innerHTML = sorted.map(review => {
         const title = getAnimeTitle(review);
-        const poster = getPosterUrl(review);
+        const poster = getPosterUrl(review.animePosterUrl);
         const date = review.createdAt
             ? new Date(review.createdAt).toLocaleDateString("ru-RU")
             : "—";

@@ -60,6 +60,28 @@ function setupProfileButton() {
     });
 }
 
+function getPosterUrl(posterUrl) {
+    const fallbackPoster = "../images/no-poster.jpg";
+
+    if (!posterUrl || posterUrl.trim() === "") {
+        return fallbackPoster;
+    }
+
+    if (posterUrl.startsWith("http")) {
+        return posterUrl;
+    }
+
+    if (posterUrl.startsWith("../")) {
+        return posterUrl;
+    }
+
+    if (posterUrl.startsWith("images/")) {
+        return `../${posterUrl}`;
+    }
+
+    return posterUrl;
+}
+
 function getBookmarkTitle(item) {
     return item.titleRu || item.titleOriginal || "Без названия";
 }
@@ -179,10 +201,7 @@ function renderBookmarks(list) {
 
     bookmarksGrid.innerHTML = list.map(item => {
         const fallbackPoster = "../images/no-poster.jpg";
-        const poster =
-            item.posterUrl && item.posterUrl.trim() !== ""
-                ? item.posterUrl
-                : fallbackPoster;
+        const poster = getPosterUrl(item.posterUrl);
 
         const title = getBookmarkTitle(item);
 

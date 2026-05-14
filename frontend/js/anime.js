@@ -107,6 +107,28 @@ async function loadCurrentUserListItem(animeId) {
     }
 }
 
+function getPosterUrl(posterUrl) {
+    const fallbackPoster = "../images/no-poster.jpg";
+
+    if (!posterUrl || posterUrl.trim() === "") {
+        return fallbackPoster;
+    }
+
+    if (posterUrl.startsWith("http")) {
+        return posterUrl;
+    }
+
+    if (posterUrl.startsWith("../")) {
+        return posterUrl;
+    }
+
+    if (posterUrl.startsWith("images/")) {
+        return `../${posterUrl}`;
+    }
+
+    return posterUrl;
+}
+
 function setupProfileButton() {
     const profileBtn = document.querySelector(".profile-btn");
 
@@ -127,10 +149,7 @@ function setupProfileButton() {
 
 function renderAnimeTop(anime) {
     const fallbackPoster = "../images/no-poster.jpg";
-    const poster =
-        anime.posterUrl && anime.posterUrl.trim() !== ""
-            ? anime.posterUrl
-            : fallbackPoster;
+    const poster = getPosterUrl(anime.posterUrl);
 
     animeDetails.innerHTML = `
         <div class="anime-top-layout">

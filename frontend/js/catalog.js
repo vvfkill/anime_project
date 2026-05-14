@@ -45,26 +45,26 @@ function setupProfileButton() {
     });
 }
 
-function getPosterUrl(anime) {
+function getPosterUrl(posterUrl) {
     const fallbackPoster = "../images/no-poster.jpg";
 
-    if (!anime.posterUrl || anime.posterUrl.trim() === "") {
+    if (!posterUrl || posterUrl.trim() === "") {
         return fallbackPoster;
     }
 
-    if (anime.posterUrl.startsWith("http")) {
-        return anime.posterUrl;
+    if (posterUrl.startsWith("http")) {
+        return posterUrl;
     }
 
-    if (anime.posterUrl.startsWith("../")) {
-        return anime.posterUrl;
+    if (posterUrl.startsWith("../")) {
+        return posterUrl;
     }
 
-    if (anime.posterUrl.startsWith("images/")) {
-        return `../${anime.posterUrl}`;
+    if (posterUrl.startsWith("images/")) {
+        return `../${posterUrl}`;
     }
 
-    return anime.posterUrl;
+    return posterUrl;
 }
 
 function buildCatalogUrl() {
@@ -78,7 +78,7 @@ function buildCatalogUrl() {
     }
 
     if (currentYearFrom && currentYearTo && currentYearFrom === currentYearTo) {
-    params.set("year", currentYearFrom);
+        params.set("year", currentYearFrom);
     }
 
     if (currentRating) {
@@ -146,7 +146,7 @@ function renderCatalog() {
 
     catalogGrid.innerHTML = items.map(anime => {
         const title = anime.titleRu || anime.titleOriginal || "Без названия";
-        const poster = getPosterUrl(anime);
+        const poster = getPosterUrl(anime.posterUrl);
 
         return `
             <a class="catalog-card glass" href="anime.html?id=${anime.animeId}">
@@ -220,15 +220,25 @@ function setupCatalogEvents() {
         }
     });
 
-    catalogYearInput.addEventListener("keydown", event => {
-        if (event.key === "Enter") {
-            applyFilters();
-        }
-    });
+    if (catalogYearFromInput) {
+        catalogYearFromInput.addEventListener("keydown", event => {
+            if (event.key === "Enter") {
+                applyFilters();
+            }
+        });
+    }
+
+    if (catalogYearToInput) {
+        catalogYearToInput.addEventListener("keydown", event => {
+            if (event.key === "Enter") {
+                applyFilters();
+            }
+        });
+    }
 
     document.querySelectorAll(".filter-chip").forEach(button => {
         button.addEventListener("click", () => {
-            document.querySelectorAll(".catalog-rating-chip").forEach(item => {
+            document.querySelectorAll(".filter-chip").forEach(item => {
                 item.classList.remove("active");
             });
 

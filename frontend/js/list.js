@@ -91,9 +91,29 @@ function getAnimeTitle(item) {
 }
 
 function getAnimePoster(item) {
-    return item.posterUrl && item.posterUrl.trim() !== ""
-        ? item.posterUrl
-        : "../images/no-poster.jpg";
+    return getPosterUrl(item.posterUrl);
+}
+
+function getPosterUrl(posterUrl) {
+    const fallbackPoster = "../images/no-poster.jpg";
+
+    if (!posterUrl || posterUrl.trim() === "") {
+        return fallbackPoster;
+    }
+
+    if (posterUrl.startsWith("http")) {
+        return posterUrl;
+    }
+
+    if (posterUrl.startsWith("../")) {
+        return posterUrl;
+    }
+
+    if (posterUrl.startsWith("images/")) {
+        return `../${posterUrl}`;
+    }
+
+    return posterUrl;
 }
 
 function getStatusClass(status) {
@@ -461,20 +481,6 @@ if (resetListFiltersBtn) {
         renderUserList();
     });
 }
-
-    if (resetListFiltersBtn) {
-        resetListFiltersBtn.addEventListener("click", () => {
-            currentSearch = "";
-            currentSort = "updated";
-            currentStatus = "all";
-
-            if (listSearchInput) listSearchInput.value = "";
-            if (listSortSelect) listSortSelect.value = "updated";
-
-            syncStatusControls("all");
-            renderUserList();
-        });
-    }
 
     userListGrid.addEventListener("change", event => {
         const select = event.target.closest(".tracking-status-select");
