@@ -21,7 +21,7 @@ ADD CONSTRAINT fk_user_list_anime
 FOREIGN KEY (anime_id) REFERENCES anime(anime_id) ON DELETE CASCADE,
 ADD CONSTRAINT uq_user_list UNIQUE (user_id, anime_id),
 ADD CONSTRAINT chk_user_list_status
-CHECK (status IN ('Запланировано', 'Смотрю', 'Просмотрено', 'Брошено')),
+CHECK (status IN ('Запланировано', 'Смотрю', 'Просмотрено', 'Брошено', 'Отложено', 'Пересматриваю')),
 ADD CONSTRAINT chk_user_list_score
 CHECK (personal_score IS NULL OR personal_score BETWEEN 1 AND 10);
 

@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
             showMessage("Вход выполнен успешно.", "success");
 
             setTimeout(() => {
-                window.location.href = "index.html";
+                window.location.href = "../pages/index.html";
             }, 700);
         } catch (error) {
             showMessage(error.message || "Ошибка при входе.");

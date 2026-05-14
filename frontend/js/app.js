@@ -21,7 +21,7 @@ function setupProfileButton() {
         const user = getCurrentUser();
 
         if (!user) {
-            window.location.href = "login.html";
+            window.location.href = "../pages/login.html";
             return;
         }
 
@@ -42,7 +42,7 @@ async function fetchAnime(search = "", page = 1, pageSize = 12) {
 }
 
 function createAnimeCard(anime) {
-    const fallbackPoster = "images/no-poster.jpg";
+    const fallbackPoster = "../images/no-poster.jpg";
     const poster =
         anime.posterUrl && anime.posterUrl.trim() !== ""
             ? anime.posterUrl

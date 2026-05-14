@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AnimeTrack — Мой список</title>
+    <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body class="list-page">
+    <div class="page-shell">
+        <header class="header glass">
+            <div class="logo">Anime<span>Track</span></div>
+
+            <nav class="nav">
+                <a href="index.html">Главная</a>
+                <a href="index.html">Каталог</a>
+                <a href="list.html" class="active">Список</a>
+                <a href="bookmarks.html">Закладки</a>
+                <a href="#">Отзывы</a>
+            </nav>
+
+            <button type="button" class="profile-btn glass">
+                <span class="profile-icon">◉</span>
+                <span>Профиль</span>
+            </button>
+        </header>
+
+        <main class="tracking-layout">
+            <aside class="tracking-sidebar glass">
+                <h2>Фильтры</h2>
+
+                <div class="tracking-filter-block">
+                    <h3>Статус</h3>
+
+                    <label class="tracking-check">
+                        <input type="radio" name="statusFilter" class="status-radio" value="all" checked>
+                        <span>Все</span>
+                    </label>
+
+                    <label class="tracking-check">
+                        <input type="radio" name="statusFilter" class="status-radio" value="Смотрю">
+                        <span>Смотрю</span>
+                    </label>
+
+                    <label class="tracking-check">
+                        <input type="radio" name="statusFilter" class="status-radio" value="Запланировано">
+                        <span>Запланировано</span>
+                    </label>
+
+                    <label class="tracking-check">
+                        <input type="radio" name="statusFilter" class="status-radio" value="Просмотрено">
+                        <span>Просмотрено</span>
+                    </label>
+
+                    <label class="tracking-check">
+                        <input type="radio" name="statusFilter" class="status-radio" value="Брошено">
+                        <span>Брошено</span>
+                    </label>
+
+                    <label class="tracking-check">
+                        <input type="radio" name="statusFilter" class="status-radio" value="Отложено">
+                        <span>Отложено</span>
+                    </label>
+
+                    <label class="tracking-check">
+                        <input type="radio" name="statusFilter" class="status-radio" value="Пересматриваю">
+                        <span>Пересматриваю</span>
+                    </label>
+                </div>
+
+                <div class="tracking-filter-block">
+                    <h3>Сортировка</h3>
+                    <select id="listSortSelect" class="tracking-select">
+                        <option value="updated">По дате обновления</option>
+                        <option value="title">По названию</option>
+                        <option value="rating">По рейтингу</option>
+                        <option value="score">По моей оценке</option>
+                        <option value="year">По году выпуска</option>
+                    </select>
+                </div>
+
+                <div class="tracking-filter-block">
+                    <h3>Поиск</h3>
+                    <input id="listSearchInput" class="tracking-input" type="text" placeholder="Название аниме..." />
+                </div>
+
+                <button type="button" id="resetListFiltersBtn" class="secondary-btn tracking-reset-btn">
+                    Сбросить фильтры
+                </button>
+            </aside>
+
+            <section class="tracking-content">
+                <div class="tracking-head">
+                    <div>
+                        <h1>Мой список</h1>
+                        <p id="listCount">Загрузка списка...</p>
+                    </div>
+
+                    <div class="tracking-user-mini glass">
+                        <div id="listAvatar" class="tracking-avatar">A</div>
+                        <div>
+                            <strong id="listUserName">Пользователь</strong>
+                            <span id="listUserSubtext">Личный трекер просмотра</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tracking-summary">
+                    <article class="summary-card summary-total glass">
+                        <span>Всего</span>
+                        <strong id="totalCount">0</strong>
+                        <p>аниме в списке</p>
+                    </article>
+
+                    <article class="summary-card summary-watching glass">
+                        <span>Смотрю</span>
+                        <strong id="watchingCount">0</strong>
+                        <p>аниме</p>
+                    </article>
+
+                    <article class="summary-card summary-planned glass">
+                        <span>Запланировано</span>
+                        <strong id="plannedCount">0</strong>
+                        <p>аниме</p>
+                    </article>
+
+                    <article class="summary-card summary-completed glass">
+                        <span>Просмотрено</span>
+                        <strong id="completedCount">0</strong>
+                        <p>аниме</p>
+                    </article>
+
+                    <article class="summary-card summary-dropped glass">
+                        <span>Брошено</span>
+                        <strong id="droppedCount">0</strong>
+                        <p>аниме</p>
+                    </article>
+                </div>
+
+                <div class="tracking-tabs">
+                    <button type="button" class="tracking-tab active" data-status="all">Все</button>
+                    <button type="button" class="tracking-tab" data-status="Смотрю">Смотрю</button>
+                    <button type="button" class="tracking-tab" data-status="Запланировано">Запланировано</button>
+                    <button type="button" class="tracking-tab" data-status="Просмотрено">Просмотрено</button>
+                    <button type="button" class="tracking-tab" data-status="Брошено">Брошено</button>
+                </div>
+
+                <div id="userListGrid" class="tracking-list">
+                    <p>Загрузка...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="../js/list.js"></script>
+</body>
+</html>

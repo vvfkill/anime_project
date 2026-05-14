@@ -7,6 +7,16 @@ namespace anime_project.Services;
 
 public class UserService : IUserService
 {
+    private static readonly HashSet<string> AllowedListStatuses = new(StringComparer.Ordinal)
+    {
+        "Просмотрено",
+        "Брошено",
+        "Отложено",
+        "Запланировано",
+        "Пересматриваю",
+        "Смотрю"
+    };
+
     private readonly AnimeProjectContext _context;
 
     public UserService(AnimeProjectContext context)
@@ -103,15 +113,26 @@ public class UserService : IUserService
             .Select(x => new UserListDto
             {
                 AnimeId = x.anime_id,
-                Title = x.anime.title_original,
+                Title = x.anime.title_ru ?? x.anime.title_original,
+                TitleRu = x.anime.title_ru,
+                TitleOriginal = x.anime.title_original,
+                ReleaseYear = x.anime.release_year,
+                Type = x.anime.type,
+                EpisodesTotal = x.anime.episodes_total,
+                PosterUrl = x.anime.poster_url,
+                AverageRating = x.anime.average_rating,
                 Status = x.status,
-                Score = x.personal_score
+                Score = x.personal_score,
+                UpdatedAt = x.updated_at
             })
             .ToListAsync();
     }
 
     public async Task AddToListAsync(int userId, AddToUserListDto dto)
     {
+        ValidateListStatus(dto.Status);
+        ValidateScore(dto.Score);
+
         var userExists = await _context.users
             .AnyAsync(u => u.user_id == userId);
 
@@ -128,7 +149,7 @@ public class UserService : IUserService
             .AnyAsync(x => x.user_id == userId && x.anime_id == dto.AnimeId);
 
         if (exists)
-            throw new Exception("Аниме уже добавлено в список");
+            throw new InvalidOperationException("Аниме уже добавлено в список");
 
         var item = new user_list
         {
@@ -147,11 +168,14 @@ public class UserService : IUserService
 
     public async Task UpdateUserListAsync(int userId, int animeId, UpdateUserListDto dto)
     {
+        ValidateListStatus(dto.Status);
+        ValidateScore(dto.Score);
+
         var item = await _context.user_lists
             .FirstOrDefaultAsync(x => x.user_id == userId && x.anime_id == animeId);
 
         if (item == null)
-            throw new Exception("Запись списка не найдена");
+            throw new KeyNotFoundException("Запись списка не найдена");
 
         item.status = dto.Status;
         item.personal_score = dto.Score;
@@ -168,7 +192,7 @@ public class UserService : IUserService
             .FirstOrDefaultAsync(x => x.user_id == userId && x.anime_id == animeId);
 
         if (item == null)
-            throw new Exception("Запись списка не найдена");
+            throw new KeyNotFoundException("Запись списка не найдена");
 
         _context.user_lists.Remove(item);
         await _context.SaveChangesAsync();
@@ -193,5 +217,20 @@ public class UserService : IUserService
             : null;
 
         await _context.SaveChangesAsync();
+    }
+
+    private static void ValidateListStatus(string? status)
+    {
+        if (string.IsNullOrWhiteSpace(status))
+            throw new ArgumentException("Статус списка обязателен");
+
+        if (!AllowedListStatuses.Contains(status))
+            throw new ArgumentException("Недопустимый статус списка");
+    }
+
+    private static void ValidateScore(int? score)
+    {
+        if (score is < 1 or > 10)
+            throw new ArgumentException("Оценка должна быть от 1 до 10");
     }
 }

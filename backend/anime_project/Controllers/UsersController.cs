@@ -1,9 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using anime_project.DTOs;
+using anime_project.Services;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using anime_project.Data;
-using anime_project.DTOs;
-using anime_project.Models;
-
 
 namespace anime_project.Controllers;
 
@@ -11,212 +9,127 @@ namespace anime_project.Controllers;
 [Route("api/[controller]")]
 public class UsersController : ControllerBase
 {
-    private readonly AnimeProjectContext _context;
+    private readonly IUserService _userService;
 
-    public UsersController(AnimeProjectContext context)
+    public UsersController(IUserService userService)
     {
-        _context = context;
+        _userService = userService;
     }
 
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        var users = await _context.users
-            .AsNoTracking()
-            .Select(u => new UserDto
-            {
-                UserId = u.user_id,
-                Nickname = u.nickname,
-                Email = u.email,
-                AvatarUrl = u.avatar_url,
-                RegistrationDate = u.registration_date,
-                Status = u.status
-            })
-            .ToListAsync();
-
+        var users = await _userService.GetUsersAsync();
         return Ok(users);
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var user = await _context.users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.user_id == id);
+        var user = await _userService.GetUserByIdAsync(id);
 
         if (user == null)
             return NotFound();
 
-        var result = new UserDto
-        {
-            UserId = user.user_id,
-            Nickname = user.nickname,
-            Email = user.email,
-            AvatarUrl = user.avatar_url,
-            RegistrationDate = user.registration_date,
-            Status = user.status
-        };
-
-        return Ok(result);
+        return Ok(user);
     }
 
     [HttpPost]
     public async Task<IActionResult> Create(CreateUserDto dto)
     {
-        var user = new user
+        try
         {
-            nickname = dto.Nickname,
-            email = dto.Email,
-            phone = dto.Phone,
-            password_hash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            registration_date = DateTime.Now,
-            status = "active"
-        };
+            var userId = await _userService.CreateUserAsync(dto);
 
-        _context.users.Add(user);
-        await _context.SaveChangesAsync();
-
-        return Ok(new
+            return Ok(new
+            {
+                message = "User created",
+                userId
+            });
+        }
+        catch (Exception ex)
         {
-            message = "User created",
-            userId = user.user_id
-        });
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginDto dto)
     {
-        var user = await _context.users
-            .FirstOrDefaultAsync(u => u.email == dto.Email);
+        var result = await _userService.LoginAsync(dto);
 
-        if (user == null)
-            return Unauthorized("Invalid email or password");
+        if (result == null)
+            return Unauthorized(new { message = "Invalid email or password" });
 
-        if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.password_hash))
-            return Unauthorized("Invalid email or password");
-
-        return Ok(new
-        {
-            message = "Login successful",
-            userId = user.user_id,
-            nickname = user.nickname
-        });
+        return Ok(result);
     }
 
     [HttpGet("{id}/list")]
     public async Task<IActionResult> GetUserList(int id)
     {
-        var list = await _context.user_lists
-            .Where(x => x.user_id == id)
-            .Include(x => x.anime)
-            .Select(x => new UserListDto
-            {
-                AnimeId = x.anime_id,
-                Title = x.anime.title_original,
-                Status = x.status,
-                Score = x.personal_score
-            })
-            .ToListAsync();
-
+        var list = await _userService.GetUserListAsync(id);
         return Ok(list);
     }
 
     [HttpPost("{id}/list")]
     public async Task<IActionResult> AddToList(int id, AddToUserListDto dto)
     {
-        var exists = await _context.user_lists
-            .AnyAsync(x => x.user_id == id && x.anime_id == dto.AnimeId);
-
-        if (exists)
-            return Conflict("Anime already in list");
-
-        var item = new user_list
+        try
         {
-            user_id = id,
-            anime_id = dto.AnimeId,
-            status = dto.Status,
-            personal_score = dto.Score
-        };
-
-        _context.user_lists.Add(item);
-        await _context.SaveChangesAsync();
-
-        var avg = await _context.user_lists
-        .Where(x => x.anime_id == dto.AnimeId && x.personal_score != null)
-        .AverageAsync(x => x.personal_score);
-
-        var anime = await _context.animes.FindAsync(dto.AnimeId);
-
-        if (anime != null)
-        {
-            anime.average_rating = (decimal?)avg;
-            await _context.SaveChangesAsync();
+            await _userService.AddToListAsync(id, dto);
+            return Ok(new { message = "Added to list" });
         }
-
-        return Ok("Added to list");
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (DbUpdateException)
+        {
+            return BadRequest(new { message = "Не удалось сохранить статус. Проверьте ограничение chk_user_list_status в базе данных." });
+        }
+        catch (Exception ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
     }
 
     [HttpPut("{userId}/list/{animeId}")]
     public async Task<IActionResult> UpdateUserList(int userId, int animeId, UpdateUserListDto dto)
     {
-        var item = await _context.user_lists
-            .FirstOrDefaultAsync(x => x.user_id == userId && x.anime_id == animeId);
-
-        if (item == null)
-            return NotFound("Item not found");
-
-        // обновляем данные
-        item.status = dto.Status;
-        item.personal_score = dto.Score;
-
-        await _context.SaveChangesAsync();
-
-        // 🔽 пересчёт рейтинга
-        var avg = await _context.user_lists
-            .Where(x => x.anime_id == animeId && x.personal_score != null)
-            .AverageAsync(x => x.personal_score);
-
-        var anime = await _context.animes.FindAsync(animeId);
-
-        if (anime != null)
+        try
         {
-            anime.average_rating = (decimal?)avg;
-            await _context.SaveChangesAsync();
+            await _userService.UpdateUserListAsync(userId, animeId, dto);
+            return Ok(new { message = "Updated" });
         }
-
-        return Ok("Updated");
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (DbUpdateException)
+        {
+            return BadRequest(new { message = "Не удалось сохранить статус. Проверьте ограничение chk_user_list_status в базе данных." });
+        }
     }
 
     [HttpDelete("{userId}/list/{animeId}")]
     public async Task<IActionResult> DeleteFromUserList(int userId, int animeId)
     {
-        var item = await _context.user_lists
-            .FirstOrDefaultAsync(x => x.user_id == userId && x.anime_id == animeId);
-
-        if (item == null)
-            return NotFound("Item not found");
-
-        _context.user_lists.Remove(item);
-        await _context.SaveChangesAsync();
-
-        var scores = await _context.user_lists
-            .Where(x => x.anime_id == animeId && x.personal_score != null)
-            .Select(x => x.personal_score!.Value)
-            .ToListAsync();
-
-        var anime = await _context.animes.FindAsync(animeId);
-
-        if (anime != null)
+        try
         {
-            anime.average_rating = scores.Any()
-                ? (decimal?)scores.Average()
-                : null;
-
-            await _context.SaveChangesAsync();
+            await _userService.DeleteFromUserListAsync(userId, animeId);
+            return Ok(new { message = "Deleted" });
         }
-
-        return Ok("Deleted");
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
     }
 }
-
-    

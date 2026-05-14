@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AnimeTrack — Закладки</title>
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="../css/style.css" />
 </head>
 <body class="bookmarks-page">
     <div class="page-shell">
@@ -13,16 +13,11 @@
 
             <nav class="nav">
                 <a href="index.html">Главная</a>
-                <a href="#">Каталог</a>
-                <a href="#">Список</a>
+                <a href="index.html">Каталог</a>
+                <a href="list.html">Список</a>
                 <a href="bookmarks.html" class="active">Закладки</a>
                 <a href="#">Отзывы</a>
             </nav>
-
-            <div class="header-actions">
-                <div class="header-search glass">
-                    <input type="text" placeholder="Поиск аниме..." />
-                </div>
 
                 <button type="button" class="profile-btn glass">
                     <span class="profile-icon">◉</span>
@@ -37,20 +32,20 @@
 
                 <div class="filter-group">
                     <h3>Тип</h3>
-                    <label><input type="checkbox" value="TV Сериал"> TV Сериал</label>
-                    <label><input type="checkbox" value="Фильм"> Фильм</label>
-                    <label><input type="checkbox" value="OVA"> OVA</label>
-                    <label><input type="checkbox" value="ONA"> ONA</label>
-                    <label><input type="checkbox" value="Спешл"> Спешл</label>
+                    <label><input type="radio" value="TV Сериал"> TV Сериал</label>
+                    <label><input type="radio" value="Фильм"> Фильм</label>
+                    <label><input type="radio" value="OVA"> OVA</label>
+                    <label><input type="radio" value="ONA"> ONA</label>
+                    <label><input type="radio" value="Спешл"> Спешл</label>
                 </div>
 
                 <div class="filter-group">
                     <h3>Жанры</h3>
-                    <label><input type="checkbox" value="Экшен"> Экшен</label>
-                    <label><input type="checkbox" value="Приключения"> Приключения</label>
-                    <label><input type="checkbox" value="Комедия"> Комедия</label>
-                    <label><input type="checkbox" value="Драма"> Драма</label>
-                    <label><input type="checkbox" value="Фэнтези"> Фэнтези</label>
+                    <label><input type="radio" value="Экшен"> Экшен</label>
+                    <label><input type="radio" value="Приключения"> Приключения</label>
+                    <label><input type="radio" value="Комедия"> Комедия</label>
+                    <label><input type="radio" value="Драма"> Драма</label>
+                    <label><input type="radio" value="Фэнтези"> Фэнтези</label>
                 </div>
 
                 <div class="filter-group">
@@ -105,6 +100,6 @@
         </main>
     </div>
 
-    <script src="bookmarks.js"></script>
+    <script src="../js/bookmarks.js"></script>
 </body>
 </html>
