@@ -98,27 +98,6 @@
     transition: 0.2s ease;
 }
 
-.hero-image {
-    display: flex;
-    align-items: stretch;
-    justify-content: center;
-}
-
-.hero-placeholder {
-    width: 100%;
-    min-height: 360px;
-    border-radius: var(--radius-lg);
-    background:
-        linear-gradient(180deg, rgba(176, 115, 255, 0.18), rgba(34, 21, 76, 0.2)),
-        #2a1c55;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #d8cfff;
-    font-size: 1.2rem;
-}
-
 .content-section {
     display: flex;
     flex-direction: column;
@@ -235,27 +214,64 @@
     padding-right: 0;
 }
 
-@media (max-width: 1100px) {
 .hero {
-        grid-template-columns: 1fr;
-    }
+    position: relative;
+    min-height: 430px;
+    display: flex;
+    align-items: center;
+    padding: 48px;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background:
+        linear-gradient(
+            90deg,
+            rgba(15, 11, 31, 0.92) 0%,
+            rgba(15, 11, 31, 0.76) 42%,
+            rgba(15, 11, 31, 0.48) 100%
+        ),
+        url("../../images/home-banner.jpg") center / cover no-repeat;
+}
+.hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at right center, rgba(139, 92, 246, 0.24), transparent 34%),
+        linear-gradient(180deg, rgba(18, 13, 37, 0.22), rgba(8, 6, 19, 0.42));
+    pointer-events: none;
 }
 
-@media (max-width: 760px) {
-.search-box {
-        width: 100%;
-    }
+.hero-text {
+    position: relative;
+    z-index: 2;
+    max-width: 720px;
+}
 
 .hero h1 {
-        font-size: 2.3rem;
-    }
+    font-size: clamp(3rem, 5vw, 5.2rem);
+    line-height: 1.05;
+    margin: 0 0 22px;
+}
 
-.anime-card {
-        min-width: 210px;
-        max-width: 210px;
-    }
+.hero p {
+    color: var(--text-soft);
+    font-size: 1.25rem;
+    line-height: 1.7;
+    max-width: 620px;
+    margin: 0 0 30px;
+}
 
-.anime-card img {
-        height: 290px;
-    }
+.hero-label {
+    color: #c4a8ff;
+    font-size: 1rem;
+    margin-bottom: 18px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
 }
