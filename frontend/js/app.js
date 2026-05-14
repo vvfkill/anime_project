@@ -21,12 +21,11 @@ function setupProfileButton() {
         const user = getCurrentUser();
 
         if (!user) {
-            window.location.href = "../pages/login.html";
+            window.location.href = "login.html";
             return;
         }
 
-
-        alert(`Вы вошли как ${user.nickname}`);
+        window.location.href = "profile.html";
     });
 }
 

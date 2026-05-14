@@ -56,7 +56,7 @@ function setupProfileButton() {
             return;
         }
 
-        alert(`Вы вошли как ${user.nickname || user.email || "пользователь"}`);
+        window.location.href = "profile.html";
     });
 }
 
