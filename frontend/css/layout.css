@@ -1,0 +1,129 @@
+/* layout.css */
+
+.page-shell {
+    width: min(1440px, calc(100% - 48px));
+    margin: 20px auto;
+    padding: 0 0 24px;
+}
+
+.header {
+    display: grid;
+    grid-template-columns: 180px 1fr 180px;
+    align-items: center;
+    gap: 20px;
+    padding: 18px 24px;
+    border-radius: var(--radius-xl);
+    background: rgba(22, 16, 44, 0.78);
+}
+
+.logo {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.logo span {
+    color: #9d7cff;
+}
+
+.nav {
+    display: flex;
+    justify-content: center;
+    gap: 34px;
+}
+
+.nav a {
+    color: var(--text-soft);
+    text-decoration: none;
+    font-size: 1rem;
+    position: relative;
+    transition: 0.2s ease;
+}
+
+.nav a:hover,
+.nav a.active {
+    color: white;
+}
+
+.nav a.active::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -16px;
+    transform: translateX(-50%);
+    width: 34px;
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+.footer {
+    margin-top: 28px;
+    padding: 22px 28px;
+    border-radius: var(--radius-xl);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(22, 16, 44, 0.78);
+}
+
+.footer-brand p {
+    color: var(--text-soft);
+    margin: 8px 0 0;
+    font-size: 0.92rem;
+}
+
+.footer-links {
+    display: flex;
+    gap: 24px;
+}
+
+.footer-links a {
+    text-decoration: none;
+    color: var(--text-soft);
+}
+
+@media (max-width: 1100px) {
+.header {
+        grid-template-columns: 1fr;
+        justify-items: center;
+    }
+}
+
+@media (max-width: 760px) {
+.page-shell {
+        width: calc(100% - 20px);
+        margin: 10px auto;
+    }
+
+.nav {
+        flex-wrap: wrap;
+        gap: 18px;
+    }
+
+.footer {
+        flex-direction: column;
+        gap: 18px;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 1200px) {
+.header-search {
+        width: 260px;
+    }
+}
+
+@media (max-width: 900px) {
+.header {
+        flex-wrap: wrap;
+    }
+
+.header-actions {
+        width: 100%;
+    }
+
+.header-search {
+        width: 100%;
+    }
+}

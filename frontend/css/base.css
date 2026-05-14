@@ -1,0 +1,33 @@
+/* base.css */
+
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-main: #0f0b1f;
+    --bg-secondary: #17112f;
+    --glass: rgba(120, 92, 255, 0.10);
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --text-main: #f4f0ff;
+    --text-soft: #c9bce8;
+    --accent: #8b5cf6;
+    --accent-2: #a855f7;
+    --card: rgba(33, 22, 70, 0.9);
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    --radius-xl: 28px;
+    --radius-lg: 22px;
+    --radius-md: 18px;
+    --radius-sm: 14px;
+}
+
+body {
+    margin: 0;
+    font-family: Inter, Arial, sans-serif;
+    color: var(--text-main);
+    background:
+        radial-gradient(circle at top center, rgba(139, 92, 246, 0.22), transparent 35%),
+        radial-gradient(circle at right top, rgba(168, 85, 247, 0.16), transparent 30%),
+        linear-gradient(180deg, #120d25 0%, #0d0a1d 100%);
+    min-height: 100vh;
+}
