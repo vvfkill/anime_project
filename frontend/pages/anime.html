@@ -8,29 +8,7 @@
 </head>
 <body>
     <div class="page-shell">
-        <header class="header glass">
-            <div class="logo">Anime<span>Track</span></div>
-
-            <nav class="nav">
-                <a href="index.html">Главная</a>
-                <a href="catalog.html">Каталог</a>
-                <a href="list.html">Список</a>
-                <a href="bookmarks.html">Закладки</a>
-                <a href="reviews.html">Отзывы</a>
-            </nav>
-
-            <button type="button" class="profile-btn glass">
-                <span class="profile-icon">◉</span>
-                <span>Профиль</span>
-            </button>
-        </header>
-
-        <div class="search-row">
-            <div class="search-box glass">
-                <input type="text" placeholder="Поиск аниме..." />
-                <button>Найти</button>
-            </div>
-        </div>
+        <div id="siteHeader"></div>
 
         <main class="main-content">
             <section id="animeDetails" class="anime-page-top glass">
@@ -40,15 +18,15 @@
             <section class="anime-page-bottom">
                 <div class="anime-tabs glass">
                     <div class="tabs-row">
-                        <button class="tab-btn active">Описание</button>
-                        <button class="tab-btn">Персонажи</button>
-                        <button class="tab-btn">Отзывы</button>
-                        <button class="tab-btn">Похожее</button>
+                        <button type="button" class="tab-btn active">Описание</button>
+                        <button type="button" class="tab-btn">Персонажи</button>
+                        <button type="button" class="tab-btn">Отзывы</button>
+                        <button type="button" class="tab-btn">Похожее</button>
                     </div>
 
                     <div class="reviews-header">
                         <h2>Отзывы пользователей</h2>
-                        <button class="primary-btn">Написать отзыв</button>
+                        <button type="button" class="primary-btn">Написать отзыв</button>
                     </div>
 
                     <div id="reviewsContainer" class="reviews-list">
@@ -66,6 +44,7 @@
         </main>
     </div>
 
+    <script src="../js/header.js"></script>
     <script src="../js/anime.js"></script>
 </body>
 </html>

@@ -1,203 +1,207 @@
-const API_BASE = "https://localhost:7241/api/users";
+const USERS_URL = "https://localhost:7241/api/users";
 
-document.addEventListener("DOMContentLoaded", () => {
-    const tabLogin = document.getElementById("tabLogin");
-    const tabRegister = document.getElementById("tabRegister");
+const tabLogin = document.getElementById("tabLogin");
+const tabRegister = document.getElementById("tabRegister");
 
-    const loginForm = document.getElementById("loginForm");
-    const registerForm = document.getElementById("registerForm");
+const authTitle = document.getElementById("authTitle");
+const authSubtitle = document.getElementById("authSubtitle");
+const authMessage = document.getElementById("authMessage");
 
-    const authTitle = document.getElementById("authTitle");
-    const authSubtitle = document.getElementById("authSubtitle");
+const loginForm = document.getElementById("loginForm");
+const registerForm = document.getElementById("registerForm");
 
-    const authMessage = document.getElementById("authMessage");
+const loginTogglePassword = document.getElementById("loginTogglePassword");
+const registerTogglePassword = document.getElementById("registerTogglePassword");
 
-    const loginPassword = document.getElementById("loginPassword");
-    const registerPassword = document.getElementById("registerPassword");
+const loginPassword = document.getElementById("loginPassword");
+const registerPassword = document.getElementById("registerPassword");
 
-    const loginTogglePassword = document.getElementById("loginTogglePassword");
-    const registerTogglePassword = document.getElementById("registerTogglePassword");
+function showMessage(text, type = "error") {
+    if (!authMessage) return;
 
-    function showMessage(text, type = "error") {
-        if (!authMessage) return;
+    authMessage.textContent = text;
+    authMessage.className = `auth-message ${type}`;
+    authMessage.style.display = "block";
+}
 
-        authMessage.textContent = text;
-        authMessage.className = `auth-message ${type}`;
-        authMessage.style.display = "block";
+function hideMessage() {
+    if (!authMessage) return;
+
+    authMessage.textContent = "";
+    authMessage.className = "auth-message";
+    authMessage.style.display = "none";
+}
+
+function showLoginTab() {
+    hideMessage();
+
+    tabLogin?.classList.add("active");
+    tabRegister?.classList.remove("active");
+
+    loginForm?.classList.remove("hidden");
+    registerForm?.classList.add("hidden");
+
+    if (authTitle) authTitle.textContent = "Вход в аккаунт";
+    if (authSubtitle) {
+        authSubtitle.textContent = "Добро пожаловать обратно. Продолжите отслеживать любимое аниме.";
+    }
+}
+
+function showRegisterTab() {
+    hideMessage();
+
+    tabRegister?.classList.add("active");
+    tabLogin?.classList.remove("active");
+
+    registerForm?.classList.remove("hidden");
+    loginForm?.classList.add("hidden");
+
+    if (authTitle) authTitle.textContent = "Создание аккаунта";
+    if (authSubtitle) {
+        authSubtitle.textContent = "Создайте профиль, чтобы сохранять аниме, отзывы и закладки.";
+    }
+}
+
+async function loginUser(email, password) {
+    const response = await fetch(`${USERS_URL}/login`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            email,
+            password
+        })
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+        throw new Error(data?.message || "Не удалось войти в аккаунт");
     }
 
-    function clearMessage() {
-        if (!authMessage) return;
+    return data;
+}
 
-        authMessage.textContent = "";
-        authMessage.className = "auth-message";
-        authMessage.style.display = "none";
+async function registerUser(payload) {
+    const response = await fetch(`${USERS_URL}/register`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+        throw new Error(data?.message || "Не удалось зарегистрироваться");
     }
 
-    function switchToLogin() {
-        clearMessage();
+    return data;
+}
 
-        tabLogin.classList.add("active");
-        tabRegister.classList.remove("active");
+function normalizeUserResponse(data, fallback = {}) {
+    if (!data) return fallback;
 
-        loginForm.classList.remove("hidden");
-        registerForm.classList.add("hidden");
-
-        if (authTitle) authTitle.textContent = "Вход в аккаунт";
-        if (authSubtitle) authSubtitle.textContent = "Добро пожаловать обратно. Продолжите отслеживать любимое аниме.";
+    if (data.user) {
+        return data.user;
     }
 
-    function switchToRegister() {
-        clearMessage();
+    return data;
+}
 
-        tabRegister.classList.add("active");
-        tabLogin.classList.remove("active");
+function setupTabs() {
+    tabLogin?.addEventListener("click", showLoginTab);
+    tabRegister?.addEventListener("click", showRegisterTab);
+}
 
-        registerForm.classList.remove("hidden");
-        loginForm.classList.add("hidden");
-
-        if (authTitle) authTitle.textContent = "Регистрация";
-        if (authSubtitle) authSubtitle.textContent = "Создайте аккаунт и начните вести свой аниме-список.";
+function setupPasswordToggles() {
+    if (loginTogglePassword && loginPassword) {
+        loginTogglePassword.addEventListener("click", () => {
+            loginPassword.type = loginPassword.type === "password" ? "text" : "password";
+        });
     }
 
-    function togglePasswordVisibility(input) {
-        if (!input) return;
-
-        input.type = input.type === "password" ? "text" : "password";
+    if (registerTogglePassword && registerPassword) {
+        registerTogglePassword.addEventListener("click", () => {
+            registerPassword.type = registerPassword.type === "password" ? "text" : "password";
+        });
     }
+}
 
-    async function handleLogin(event) {
+function setupLoginForm() {
+    if (!loginForm) return;
+
+    loginForm.addEventListener("submit", async event => {
         event.preventDefault();
-        clearMessage();
+        hideMessage();
 
-        const email = document.getElementById("loginEmail")?.value.trim();
-        const password = document.getElementById("loginPassword")?.value.trim();
+        const formData = new FormData(loginForm);
+
+        const email = String(formData.get("email") || "").trim();
+        const password = String(formData.get("password") || "");
 
         if (!email || !password) {
-            showMessage("Заполните email и пароль.");
+            showMessage("Введите email и пароль");
             return;
         }
 
         try {
-            const response = await fetch(`${API_BASE}/login`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    email,
-                    password
-                })
-            });
+            const data = await loginUser(email, password);
+            const user = normalizeUserResponse(data, { email });
 
-            const text = await response.text();
-            let data = null;
+            localStorage.setItem("authUser", JSON.stringify(user));
 
-            try {
-                data = text ? JSON.parse(text) : null;
-            } catch {
-                data = null;
-            }
-
-            if (!response.ok) {
-                const errorMessage =
-                    data?.message ||
-                    data?.title ||
-                    "Не удалось выполнить вход.";
-                throw new Error(errorMessage);
-            }
-
-            localStorage.setItem("authUser", JSON.stringify({
-                userId: data.userId,
-                nickname: data.nickname
-            }));
-
-            showMessage("Вход выполнен успешно.", "success");
+            showMessage("Вход выполнен успешно", "success");
 
             setTimeout(() => {
-                window.location.href = "../pages/index.html";
-            }, 700);
+                window.location.href = "index.html";
+            }, 500);
         } catch (error) {
-            showMessage(error.message || "Ошибка при входе.");
+            showMessage(error.message);
         }
-    }
+    });
+}
 
-    async function handleRegister(event) {
+function setupRegisterForm() {
+    if (!registerForm) return;
+
+    registerForm.addEventListener("submit", async event => {
         event.preventDefault();
-        clearMessage();
+        hideMessage();
 
-        const nickname = document.getElementById("registerNickname")?.value.trim();
-        const email = document.getElementById("registerEmail")?.value.trim();
-        const phone = document.getElementById("registerPhone")?.value.trim();
-        const password = document.getElementById("registerPassword")?.value.trim();
+        const formData = new FormData(registerForm);
+
+        const nickname = String(formData.get("nickname") || "").trim();
+        const email = String(formData.get("email") || "").trim();
+        const phone = String(formData.get("phone") || "").trim();
+        const password = String(formData.get("password") || "");
 
         if (!nickname || !email || !phone || !password) {
-            showMessage("Заполните все поля регистрации.");
+            showMessage("Заполните все поля");
             return;
         }
 
         try {
-            const response = await fetch(API_BASE, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    nickname,
-                    email,
-                    phone,
-                    password
-                })
+            await registerUser({
+                nickname,
+                email,
+                phone,
+                password
             });
-
-            const text = await response.text();
-            let data = null;
-
-            try {
-                data = text ? JSON.parse(text) : null;
-            } catch {
-                data = null;
-            }
-
-            if (!response.ok) {
-                const errorMessage =
-                    data?.message ||
-                    data?.title ||
-                    "Не удалось зарегистрироваться.";
-                throw new Error(errorMessage);
-            }
 
             showMessage("Регистрация успешна. Теперь войдите в аккаунт.", "success");
             registerForm.reset();
-            switchToLogin();
+
+            setTimeout(showLoginTab, 700);
         } catch (error) {
-            showMessage(error.message || "Ошибка при регистрации.");
+            showMessage(error.message);
         }
-    }
+    });
+}
 
-    if (tabLogin) {
-        tabLogin.addEventListener("click", switchToLogin);
-    }
-
-    if (tabRegister) {
-        tabRegister.addEventListener("click", switchToRegister);
-    }
-
-    if (loginForm) {
-        loginForm.addEventListener("submit", handleLogin);
-    }
-
-    if (registerForm) {
-        registerForm.addEventListener("submit", handleRegister);
-    }
-
-    if (loginTogglePassword) {
-        loginTogglePassword.addEventListener("click", () => togglePasswordVisibility(loginPassword));
-    }
-
-    if (registerTogglePassword) {
-        registerTogglePassword.addEventListener("click", () => togglePasswordVisibility(registerPassword));
-    }
-
-    switchToLogin();
-});
+setupTabs();
+setupPasswordToggles();
+setupLoginForm();
+setupRegisterForm();

@@ -2,33 +2,6 @@ const API_URL = "https://localhost:7241/api/anime";
 
 const popularAnimeContainer = document.getElementById("popularAnime");
 const newAnimeContainer = document.getElementById("newAnime");
-const searchResultsContainer = document.getElementById("searchResults");
-
-const searchInput = document.getElementById("searchInput");
-const searchButton = document.getElementById("searchButton");
-
-function getCurrentUser() {
-    const user = localStorage.getItem("authUser");
-    return user ? JSON.parse(user) : null;
-}
-
-function setupProfileButton() {
-    const profileBtn = document.querySelector(".profile-btn");
-
-    if (!profileBtn) return;
-
-    profileBtn.addEventListener("click", (event) => {
-        const user = getCurrentUser();
-
-        if (!user) {
-            event.preventDefault();
-            window.location.href = "login.html";
-            return;
-        }
-
-        window.location.href = "profile.html";
-    });
-}
 
 function getPosterUrl(posterUrl) {
     const fallbackPoster = "../images/no-poster.jpg";
@@ -45,11 +18,22 @@ function getPosterUrl(posterUrl) {
         return posterUrl;
     }
 
+    if (posterUrl.startsWith("/")) {
+        return `https://localhost:7241${posterUrl}`;
+    }
+
     if (posterUrl.startsWith("images/")) {
         return `../${posterUrl}`;
     }
 
     return posterUrl;
+}
+
+function getItemsFromResponse(data) {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.items)) return data.items;
+    if (Array.isArray(data.data)) return data.data;
+    return [];
 }
 
 async function fetchAnime(search = "", page = 1, pageSize = 50) {
@@ -72,7 +56,7 @@ async function fetchAnime(search = "", page = 1, pageSize = 50) {
 }
 
 function getAnimeTitle(anime) {
-    return anime.titleRu || anime.titleOriginal || "Без названия";
+    return anime.titleRu || anime.titleOriginal || anime.title || "Без названия";
 }
 
 function createAnimeCard(anime) {
@@ -83,16 +67,16 @@ function createAnimeCard(anime) {
     return `
         <a class="anime-card-link" href="anime.html?id=${anime.animeId}">
             <div class="anime-card">
-                <img 
-                    src="${poster}" 
+                <img
+                    src="${poster}"
                     alt="${title}"
                     onerror="this.onerror=null; this.src='${fallbackPoster}';"
                 >
 
                 <div class="anime-card-content">
                     <h3>${title}</h3>
-                    <p><strong>Оригинальное:</strong> ${anime.titleOriginal || "—"}</p>
-                    <p><strong>Рейтинг:</strong> ${anime.averageRating ?? "—"}</p>
+                    <p class="anime-original-title">${anime.titleOriginal || ""}</p>
+                    <p class="anime-card-rating">★ ${anime.averageRating ?? "—"}</p>
                 </div>
             </div>
         </a>
@@ -125,19 +109,15 @@ function getNewAnime(items) {
 async function loadHomePage() {
     try {
         if (popularAnimeContainer) {
-            popularAnimeContainer.innerHTML = `<p class="empty-text">Загрузка популярного...</p>`;
+            popularAnimeContainer.innerHTML = `<p class="empty-text">Загрузка...</p>`;
         }
 
         if (newAnimeContainer) {
-            newAnimeContainer.innerHTML = `<p class="empty-text">Загрузка новинок...</p>`;
-        }
-
-        if (searchResultsContainer) {
-            searchResultsContainer.innerHTML = "";
+            newAnimeContainer.innerHTML = `<p class="empty-text">Загрузка...</p>`;
         }
 
         const data = await fetchAnime("", 1, 50);
-        const items = data.items || [];
+        const items = getItemsFromResponse(data);
 
         renderSection(
             popularAnimeContainer,
@@ -152,76 +132,13 @@ async function loadHomePage() {
         );
     } catch (error) {
         if (popularAnimeContainer) {
-            popularAnimeContainer.innerHTML = `<p class="empty-text">Ошибка загрузки: ${error.message}</p>`;
+            popularAnimeContainer.innerHTML = `<p class="empty-text">Ошибка: ${error.message}</p>`;
         }
 
         if (newAnimeContainer) {
-            newAnimeContainer.innerHTML = `<p class="empty-text">Ошибка загрузки: ${error.message}</p>`;
+            newAnimeContainer.innerHTML = `<p class="empty-text">Ошибка: ${error.message}</p>`;
         }
     }
-}
-
-async function searchAnime() {
-    if (!searchInput || !searchResultsContainer) return;
-
-    const search = searchInput.value.trim();
-
-    if (!search) {
-        searchResultsContainer.innerHTML = "";
-        return;
-    }
-
-    try {
-        searchResultsContainer.innerHTML = `<p class="empty-text">Поиск...</p>`;
-
-        const data = await fetchAnime(search, 1, 12);
-        const items = data.items || [];
-
-        renderSection(
-            searchResultsContainer,
-            items,
-            "По вашему запросу ничего не найдено."
-        );
-    } catch (error) {
-        searchResultsContainer.innerHTML = `<p class="empty-text">Ошибка поиска: ${error.message}</p>`;
-    }
-}
-
-function setupSearch() {
-    if (searchButton) {
-        searchButton.addEventListener("click", searchAnime);
-    }
-
-    if (searchInput) {
-        searchInput.addEventListener("keydown", event => {
-            if (event.key === "Enter") {
-                searchAnime();
-            }
-        });
-
-        searchInput.addEventListener("input", () => {
-            if (!searchInput.value.trim() && searchResultsContainer) {
-                searchResultsContainer.innerHTML = "";
-            }
-        });
-    }
-}
-
-function setupSliders() {
-    document.querySelectorAll(".slider-arrow").forEach(button => {
-        button.addEventListener("click", () => {
-            const targetId = button.dataset.target;
-            const container = document.getElementById(targetId);
-            const direction = button.classList.contains("left") ? -1 : 1;
-
-            if (!container) return;
-
-            container.scrollBy({
-                left: direction * 320,
-                behavior: "smooth"
-            });
-        });
-    });
 }
 
 function setupSeeAllButtons() {
@@ -232,33 +149,5 @@ function setupSeeAllButtons() {
     });
 }
 
-function setupHeroButtons() {
-    const primaryHeroBtn = document.querySelector(".hero .primary-btn");
-    const secondaryHeroBtn = document.querySelector(".hero .secondary-btn");
-
-    if (primaryHeroBtn) {
-        primaryHeroBtn.addEventListener("click", () => {
-            window.location.href = "catalog.html";
-        });
-    }
-
-    if (secondaryHeroBtn) {
-        secondaryHeroBtn.addEventListener("click", () => {
-            const user = getCurrentUser();
-
-            if (!user) {
-                window.location.href = "login.html";
-                return;
-            }
-
-            window.location.href = "list.html";
-        });
-    }
-}
-
-setupProfileButton();
-setupSearch();
-setupSliders();
 setupSeeAllButtons();
-setupHeroButtons();
 loadHomePage();

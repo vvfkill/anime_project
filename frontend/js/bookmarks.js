@@ -8,19 +8,22 @@ const resetFiltersBtn = document.getElementById("resetFiltersBtn");
 const yearFromInput = document.getElementById("yearFromInput");
 const yearToInput = document.getElementById("yearToInput");
 
-let currentYearFrom = 1950;
-let currentYearTo = 2026;
-
 let bookmarks = [];
 
 let currentType = "all";
 let currentGenre = "all";
 let currentRating = "all";
 let currentSort = "date";
+let currentYearFrom = 1950;
+let currentYearTo = 2026;
 
 function getCurrentUser() {
-    const user = localStorage.getItem("authUser");
-    return user ? JSON.parse(user) : null;
+    try {
+        const user = localStorage.getItem("authUser");
+        return user ? JSON.parse(user) : null;
+    } catch {
+        return null;
+    }
 }
 
 function getCurrentUserId() {
@@ -36,54 +39,27 @@ function requireAuth() {
 
     if (!user) {
         alert("Сначала войдите в аккаунт");
-        window.location.href = "../pages/login.html";
+        window.location.href = "login.html";
         return false;
     }
 
     return true;
 }
 
-function setupProfileButton() {
-    const profileBtn = document.querySelector(".profile-btn");
-
-    if (!profileBtn) return;
-
-    profileBtn.addEventListener("click", () => {
-        const user = getCurrentUser();
-
-        if (!user) {
-            window.location.href = "../pages/login.html";
-            return;
-        }
-
-        window.location.href = "profile.html";
-    });
-}
-
 function getPosterUrl(posterUrl) {
     const fallbackPoster = "../images/no-poster.jpg";
 
-    if (!posterUrl || posterUrl.trim() === "") {
-        return fallbackPoster;
-    }
-
-    if (posterUrl.startsWith("http")) {
-        return posterUrl;
-    }
-
-    if (posterUrl.startsWith("../")) {
-        return posterUrl;
-    }
-
-    if (posterUrl.startsWith("images/")) {
-        return `../${posterUrl}`;
-    }
+    if (!posterUrl || posterUrl.trim() === "") return fallbackPoster;
+    if (posterUrl.startsWith("http")) return posterUrl;
+    if (posterUrl.startsWith("../")) return posterUrl;
+    if (posterUrl.startsWith("/")) return `https://localhost:7241${posterUrl}`;
+    if (posterUrl.startsWith("images/")) return `../${posterUrl}`;
 
     return posterUrl;
 }
 
 function getBookmarkTitle(item) {
-    return item.titleRu || item.titleOriginal || "Без названия";
+    return item.titleRu || item.titleOriginal || item.title || "Без названия";
 }
 
 function getBookmarkGenres(item) {
@@ -99,12 +75,12 @@ function getBookmarkGenres(item) {
 function getFilteredBookmarks() {
     return bookmarks.filter(item => {
         const typeValue = String(item.type || "").toLowerCase();
+        const itemGenres = getBookmarkGenres(item);
+        const year = Number(item.releaseYear || 0);
 
         const typeMatches =
             currentType === "all" ||
             typeValue.includes(currentType.toLowerCase());
-
-        const itemGenres = getBookmarkGenres(item);
 
         const genreMatches =
             currentGenre === "all" ||
@@ -114,11 +90,7 @@ function getFilteredBookmarks() {
             currentRating === "all" ||
             Number(item.averageRating || 0) >= Number(currentRating);
 
-        const year = Number(item.releaseYear || 0);
-
-        const yearMatches =
-            !year ||
-            (year >= currentYearFrom && year <= currentYearTo);
+        const yearMatches = year >= currentYearFrom && year <= currentYearTo;
 
         return typeMatches && genreMatches && ratingMatches && yearMatches;
     });
@@ -202,13 +174,12 @@ function renderBookmarks(list) {
     bookmarksGrid.innerHTML = list.map(item => {
         const fallbackPoster = "../images/no-poster.jpg";
         const poster = getPosterUrl(item.posterUrl);
-
         const title = getBookmarkTitle(item);
 
         return `
             <article class="bookmark-card glass" onclick="openAnime(${item.animeId})">
-                <img 
-                    src="${poster}" 
+                <img
+                    src="${poster}"
                     alt="${title}"
                     onerror="this.onerror=null; this.src='${fallbackPoster}';"
                 >
@@ -295,7 +266,6 @@ function setupFilters() {
         applyFiltersBtn.addEventListener("click", () => {
             currentYearFrom = Number(yearFromInput?.value || 1950);
             currentYearTo = Number(yearToInput?.value || 2026);
-
             applyCurrentView();
         });
     }
@@ -306,24 +276,21 @@ function setupFilters() {
             currentGenre = "all";
             currentRating = "all";
             currentSort = "date";
-
             currentYearFrom = 1950;
             currentYearTo = 2026;
-
-            if (yearFromInput) yearFromInput.value = "1950";
-            if (yearToInput) yearToInput.value = "2026";
 
             const typeAll = document.querySelector('input[name="bookmarkType"][value="all"]');
             const genreAll = document.querySelector('input[name="bookmarkGenre"][value="all"]');
 
             if (typeAll) typeAll.checked = true;
             if (genreAll) genreAll.checked = true;
+            if (yearFromInput) yearFromInput.value = "1950";
+            if (yearToInput) yearToInput.value = "2026";
+            if (sortSelect) sortSelect.value = "date";
 
             document.querySelectorAll(".filter-chip").forEach(item => {
                 item.classList.remove("active");
             });
-
-            if (sortSelect) sortSelect.value = "date";
 
             syncTypeControls("all");
             applyCurrentView();
@@ -331,6 +298,5 @@ function setupFilters() {
     }
 }
 
-setupProfileButton();
 setupFilters();
 loadBookmarks();

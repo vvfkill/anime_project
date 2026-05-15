@@ -2,6 +2,7 @@
 
 .anime-page-top {
     padding: 28px;
+    margin-top: 30px;
     border-radius: var(--radius-xl);
     background: rgba(22, 16, 44, 0.78);
 }
@@ -203,35 +204,6 @@
     margin-bottom: 12px;
 }
 
-@media (max-width: 1200px) {
-.anime-top-layout {
-        grid-template-columns: 280px 1fr;
-    }
-
-.anime-side-info {
-        grid-column: 1 / -1;
-    }
-
-.anime-page-bottom {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 860px) {
-.anime-top-layout {
-        grid-template-columns: 1fr;
-    }
-
-.anime-big-poster {
-        max-width: 320px;
-        height: auto;
-    }
-
-.anime-main-info h1 {
-        font-size: 2.4rem;
-    }
-}
-
 .custom-list-dropdown {
     position: relative;
     width: 320px;
@@ -318,13 +290,38 @@
     border-bottom: none;
 }
 
-.list-dropdown-menu button:hover {
-    background: rgba(139, 92, 246, 0.35);
-    color: #fff;
-}
-
+.list-dropdown-menu button:hover,
 .list-dropdown-menu button.active {
     background: rgba(139, 92, 246, 0.48);
     color: #fff;
     font-weight: 700;
+}
+
+@media (max-width: 1200px) {
+    .anime-top-layout {
+        grid-template-columns: 280px 1fr;
+    }
+
+    .anime-side-info {
+        grid-column: 1 / -1;
+    }
+
+    .anime-page-bottom {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 860px) {
+    .anime-top-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .anime-big-poster {
+        max-width: 320px;
+        height: auto;
+    }
+
+    .anime-main-info h1 {
+        font-size: 2.4rem;
+    }
 }

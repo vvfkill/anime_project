@@ -1,43 +1,36 @@
-const USERS_URL = "https://localhost:7241/api/users";
+const USER_LIST_URL = "https://localhost:7241/api/userlist";
 
 const userListGrid = document.getElementById("userListGrid");
 const listCount = document.getElementById("listCount");
 const listUserName = document.getElementById("listUserName");
 const listUserSubtext = document.getElementById("listUserSubtext");
 const listAvatar = document.getElementById("listAvatar");
-const applyListFiltersBtn = document.getElementById("applyListFiltersBtn");
-const resetListFiltersBtn = document.getElementById("resetListFiltersBtn");
-
-const listYearFromInput = document.getElementById("listYearFromInput");
-const listYearToInput = document.getElementById("listYearToInput");
 
 const totalCount = document.getElementById("totalCount");
 const watchingCount = document.getElementById("watchingCount");
-const completedCount = document.getElementById("completedCount");
 const plannedCount = document.getElementById("plannedCount");
+const completedCount = document.getElementById("completedCount");
 const droppedCount = document.getElementById("droppedCount");
 
-const LIST_STATUSES = [
-    "Смотрю",
-    "Запланировано",
-    "Просмотрено",
-    "Брошено",
-    "Отложено",
-    "Пересматриваю"
-];
+const applyListFiltersBtn = document.getElementById("applyListFiltersBtn");
+const resetListFiltersBtn = document.getElementById("resetListFiltersBtn");
+const listYearFromInput = document.getElementById("listYearFromInput");
+const listYearToInput = document.getElementById("listYearToInput");
 
 let userList = [];
+
 let currentStatus = "all";
-let currentType = "all";
-let currentGenres = [];
 let currentRating = "all";
 let currentYearFrom = 1950;
 let currentYearTo = 2026;
-let currentSort = "updated";
 
 function getCurrentUser() {
-    const user = localStorage.getItem("authUser");
-    return user ? JSON.parse(user) : null;
+    try {
+        const user = localStorage.getItem("authUser");
+        return user ? JSON.parse(user) : null;
+    } catch {
+        return null;
+    }
 }
 
 function getCurrentUserId() {
@@ -53,67 +46,246 @@ function requireAuth() {
 
     if (!user) {
         alert("Сначала войдите в аккаунт");
-        window.location.href = "../pages/login.html";
+        window.location.href = "login.html";
         return false;
     }
 
     return true;
 }
 
-function setupProfileButton() {
-    const profileBtn = document.querySelector(".profile-btn");
-
-    if (!profileBtn) return;
-
-    profileBtn.addEventListener("click", () => {
-        const user = getCurrentUser();
-
-        if (!user) {
-            window.location.href = "../pages/login.html";
-            return;
-        }
-
-        window.location.href = "profile.html";
-    });
-}
-
-function escapeHtml(value) {
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
-function getAnimeTitle(item) {
-    return item.titleRu || item.title || item.titleOriginal || "Без названия";
-}
-
-function getAnimePoster(item) {
-    return getPosterUrl(item.posterUrl);
-}
-
 function getPosterUrl(posterUrl) {
     const fallbackPoster = "../images/no-poster.jpg";
 
-    if (!posterUrl || posterUrl.trim() === "") {
-        return fallbackPoster;
-    }
-
-    if (posterUrl.startsWith("http")) {
-        return posterUrl;
-    }
-
-    if (posterUrl.startsWith("../")) {
-        return posterUrl;
-    }
-
-    if (posterUrl.startsWith("images/")) {
-        return `../${posterUrl}`;
-    }
+    if (!posterUrl || posterUrl.trim() === "") return fallbackPoster;
+    if (posterUrl.startsWith("http")) return posterUrl;
+    if (posterUrl.startsWith("../")) return posterUrl;
+    if (posterUrl.startsWith("/")) return `https://localhost:7241${posterUrl}`;
+    if (posterUrl.startsWith("images/")) return `../${posterUrl}`;
 
     return posterUrl;
+}
+
+function getTitle(item) {
+    return item.titleRu || item.titleOriginal || item.title || "Без названия";
+}
+
+function renderUserInfo() {
+    const user = getCurrentUser();
+
+    if (!user) return;
+
+    const name = user.nickname || user.email || "Пользователь";
+
+    if (listUserName) listUserName.textContent = name;
+    if (listUserSubtext) listUserSubtext.textContent = "Личный трекер просмотра";
+    if (listAvatar) listAvatar.textContent = name[0]?.toUpperCase() || "A";
+}
+
+async function loadUserList() {
+    if (!requireAuth()) return;
+
+    const userId = getCurrentUserId();
+
+    try {
+        if (userListGrid) {
+            userListGrid.innerHTML = `<p>Загрузка...</p>`;
+        }
+
+        const response = await fetch(`${USER_LIST_URL}/user/${userId}`);
+
+        if (!response.ok) {
+            throw new Error("Не удалось загрузить список");
+        }
+
+        userList = await response.json();
+
+        renderUserInfo();
+        updateStats();
+        applyCurrentView();
+    } catch (error) {
+        if (userListGrid) {
+            userListGrid.innerHTML = `<p>Ошибка: ${error.message}</p>`;
+        }
+
+        if (listCount) {
+            listCount.textContent = "Ошибка загрузки данных";
+        }
+    }
+}
+
+function updateStats() {
+    const total = userList.length;
+    const watching = userList.filter(item => item.status === "Смотрю").length;
+    const planned = userList.filter(item => item.status === "Запланировано").length;
+    const completed = userList.filter(item => item.status === "Просмотрено").length;
+    const dropped = userList.filter(item => item.status === "Брошено").length;
+
+    if (totalCount) totalCount.textContent = total;
+    if (watchingCount) watchingCount.textContent = watching;
+    if (plannedCount) plannedCount.textContent = planned;
+    if (completedCount) completedCount.textContent = completed;
+    if (droppedCount) droppedCount.textContent = dropped;
+}
+
+function getSelectedValues(name) {
+    return [...document.querySelectorAll(`input[name="${name}"]:checked`)]
+        .map(input => input.value);
+}
+
+function getGenres(item) {
+    if (Array.isArray(item.genres)) return item.genres;
+    if (typeof item.genres === "string") {
+        return item.genres.split(",").map(genre => genre.trim());
+    }
+    if (typeof item.genre === "string") return [item.genre];
+
+    return [];
+}
+
+function getFilteredList() {
+    const selectedTypes = getSelectedValues("listType");
+    const selectedGenres = getSelectedValues("listGenre");
+
+    return userList.filter(item => {
+        const type = String(item.type || "").toLowerCase();
+        const genres = getGenres(item).map(genre => genre.toLowerCase());
+        const year = Number(item.releaseYear || 0);
+        const rating = Number(item.averageRating || 0);
+
+        const statusMatches =
+            currentStatus === "all" ||
+            item.status === currentStatus;
+
+        const typeMatches =
+            selectedTypes.length === 0 ||
+            selectedTypes.some(selected => type.includes(selected.toLowerCase()));
+
+        const genreMatches =
+            selectedGenres.length === 0 ||
+            selectedGenres.some(selected => genres.includes(selected.toLowerCase()));
+
+        const yearMatches = year >= currentYearFrom && year <= currentYearTo;
+
+        const ratingMatches =
+            currentRating === "all" ||
+            rating >= Number(currentRating);
+
+        return statusMatches && typeMatches && genreMatches && yearMatches && ratingMatches;
+    });
+}
+
+function applyCurrentView() {
+    const filtered = getFilteredList();
+    renderList(filtered);
+}
+
+function renderList(list) {
+    if (!userListGrid) return;
+
+    if (!userList || userList.length === 0) {
+        if (listCount) listCount.textContent = "В списке пока нет аниме";
+
+        userListGrid.innerHTML = `
+            <div class="empty-state glass">
+                <h2>Список пуст</h2>
+                <p>Откройте страницу аниме и добавьте его в список.</p>
+                <a class="primary-btn" href="catalog.html">Перейти в каталог</a>
+            </div>
+        `;
+        return;
+    }
+
+    if (!list || list.length === 0) {
+        if (listCount) listCount.textContent = "По выбранным фильтрам ничего не найдено";
+
+        userListGrid.innerHTML = `
+            <div class="empty-state glass">
+                <h2>Ничего не найдено</h2>
+                <p>Попробуйте изменить фильтры.</p>
+            </div>
+        `;
+        return;
+    }
+
+    if (listCount) {
+        listCount.textContent = `Найдено: ${list.length}`;
+    }
+
+    userListGrid.innerHTML = list.map(item => {
+        const fallbackPoster = "../images/no-poster.jpg";
+        const poster = getPosterUrl(item.posterUrl);
+        const title = getTitle(item);
+
+        return `
+            <article class="tracking-row glass">
+                <div class="tracking-anime-main" onclick="openAnime(${item.animeId})">
+                    <img
+                        src="${poster}"
+                        alt="${title}"
+                        onerror="this.onerror=null; this.src='${fallbackPoster}';"
+                    >
+
+                    <div class="tracking-anime-text">
+                        <h3>${title}</h3>
+                        <p>${item.titleOriginal || ""}</p>
+
+                        <div class="tracking-meta">
+                            <span>${item.releaseYear || "—"}</span>
+                            <span>•</span>
+                            <span>${item.type || "—"}</span>
+                            <span>•</span>
+                            <span>${item.episodesTotal || "—"} серий</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tracking-row-status">
+                    <span class="status-badge ${getStatusClass(item.status)}">${item.status || "—"}</span>
+
+                    <select class="tracking-status-select" onchange="changeStatus(${item.animeId}, this.value)">
+                        ${renderStatusOptions(item.status)}
+                    </select>
+                </div>
+
+                <div class="tracking-row-info">
+                    <span>Рейтинг</span>
+                    <strong>★ ${item.averageRating ?? "—"}</strong>
+                </div>
+
+                <div class="tracking-row-info">
+                    <span>Прогресс</span>
+                    <strong>${item.episodesWatched || 0}/${item.episodesTotal || "—"}</strong>
+                </div>
+
+                <div class="tracking-row-actions">
+                    <button type="button" class="edit-list-btn" onclick="openAnime(${item.animeId})">
+                        Открыть
+                    </button>
+
+                    <button type="button" class="remove-list-btn" onclick="removeFromList(${item.animeId})">
+                        Удалить
+                    </button>
+                </div>
+            </article>
+        `;
+    }).join("");
+}
+
+function renderStatusOptions(current) {
+    const statuses = [
+        "Смотрю",
+        "Запланировано",
+        "Просмотрено",
+        "Брошено",
+        "Отложено",
+        "Пересматриваю"
+    ];
+
+    return statuses.map(status => `
+        <option value="${status}" ${status === current ? "selected" : ""}>
+            ${status}
+        </option>
+    `).join("");
 }
 
 function getStatusClass(status) {
@@ -127,392 +299,128 @@ function getStatusClass(status) {
     return "";
 }
 
-function setupUserInfo() {
-    const user = getCurrentUser();
-    const name = user?.nickname || user?.email || "Пользователь";
-
-    if (listUserName) listUserName.textContent = name;
-    if (listUserSubtext) listUserSubtext.textContent = "Личный трекер просмотра";
-    if (listAvatar) listAvatar.textContent = name.trim().charAt(0).toUpperCase() || "A";
+function openAnime(animeId) {
+    window.location.href = `anime.html?id=${animeId}`;
 }
 
-function getItemGenres(item) {
-    if (Array.isArray(item.genres)) return item.genres;
-
-    if (typeof item.genre === "string") {
-        return [item.genre];
-    }
-
-    if (typeof item.genres === "string") {
-        return item.genres.split(",").map(genre => genre.trim());
-    }
-
-    return [];
-}
-
-function getFilteredList() {
-    return userList
-        .filter(item => {
-            const statusMatches =
-                currentStatus === "all" ||
-                item.status === currentStatus;
-
-            const typeMatches =
-                currentType === "all" ||
-                String(item.type || "").toLowerCase().includes(currentType.toLowerCase());
-
-            const itemGenres = getItemGenres(item);
-
-            const genreMatches =
-                currentGenres.length === 0 ||
-                currentGenres.some(selectedGenre =>
-                    itemGenres.some(itemGenre =>
-                        itemGenre.toLowerCase() === selectedGenre.toLowerCase()
-                    )
-                );
-
-            const ratingMatches =
-                currentRating === "all" ||
-                Number(item.averageRating || 0) >= Number(currentRating);
-
-            const year = Number(item.releaseYear || 0);
-
-            const yearMatches =
-                !year ||
-                (year >= currentYearFrom && year <= currentYearTo);
-
-            return statusMatches && typeMatches && genreMatches && ratingMatches && yearMatches;
-        })
-        .sort((a, b) => {
-            if (currentSort === "title") {
-                return getAnimeTitle(a).localeCompare(getAnimeTitle(b), "ru");
-            }
-
-            if (currentSort === "rating") {
-                return Number(b.averageRating || 0) - Number(a.averageRating || 0);
-            }
-
-            if (currentSort === "score") {
-                return Number(b.score || 0) - Number(a.score || 0);
-            }
-
-            if (currentSort === "year") {
-                return Number(b.releaseYear || 0) - Number(a.releaseYear || 0);
-            }
-
-            return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
-        });
-}
-
-function updateStats() {
-    if (totalCount) totalCount.textContent = userList.length;
-    if (watchingCount) watchingCount.textContent = userList.filter(item => item.status === "Смотрю").length;
-    if (completedCount) completedCount.textContent = userList.filter(item => item.status === "Просмотрено").length;
-    if (plannedCount) plannedCount.textContent = userList.filter(item => item.status === "Запланировано").length;
-    if (droppedCount) droppedCount.textContent = userList.filter(item => item.status === "Брошено").length;
-}
-
-function createStatusOptions(selectedStatus) {
-    return LIST_STATUSES.map(status => `
-        <option value="${escapeHtml(status)}" ${status === selectedStatus ? "selected" : ""}>
-            ${escapeHtml(status)}
-        </option>
-    `).join("");
-}
-
-function renderUserList() {
-    const filteredList = getFilteredList();
-    updateStats();
-
-    if (!userList.length) {
-        listCount.textContent = "В списке пока нет аниме";
-        userListGrid.innerHTML = `
-            <div class="empty-state glass">
-                <h2>Список пока пуст</h2>
-                <p>Откройте страницу аниме и добавьте его в личный список.</p>
-                <a class="primary-btn" href="index.html">Перейти к каталогу</a>
-            </div>
-        `;
-        return;
-    }
-
-    if (!filteredList.length) {
-        listCount.textContent = "По выбранным условиям ничего не найдено";
-        userListGrid.innerHTML = `
-            <div class="empty-state glass">
-                <h2>Ничего не найдено</h2>
-                <p>Попробуйте другой статус или поиск.</p>
-            </div>
-        `;
-        return;
-    }
-
-    listCount.textContent = `Показано: ${filteredList.length} из ${userList.length}`;
-
-    userListGrid.innerHTML = filteredList.map(item => {
-        const fallbackPoster = "../images/no-poster.jpg";
-        const poster = getAnimePoster(item);
-        const title = getAnimeTitle(item);
-        const original = item.titleOriginal && item.titleOriginal !== title
-            ? item.titleOriginal
-            : "";
-
-        const statusClass = getStatusClass(item.status);
-        const score = item.score ?? "—";
-        const rating = item.averageRating ?? "—";
-
-        return `
-            <article class="tracking-row glass" data-anime-id="${item.animeId}">
-                <div class="tracking-anime-main">
-                    <img
-                        src="${escapeHtml(poster)}"
-                        alt="${escapeHtml(title)}"
-                        onerror="this.onerror=null; this.src='${fallbackPoster}';"
-                    >
-
-                    <div class="tracking-anime-text">
-                        <h3>${escapeHtml(title)}</h3>
-                        <p>${escapeHtml(original)}</p>
-
-                        <div class="tracking-meta">
-                            <span>${item.releaseYear || "—"}</span>
-                            <span>•</span>
-                            <span>${escapeHtml(item.type || "TV Сериал")}</span>
-                            <span>•</span>
-                            <span>${item.episodesTotal || "—"} серий</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tracking-row-status">
-                    <span class="status-badge ${statusClass}">${escapeHtml(item.status)}</span>
-                    <select class="tracking-status-select" data-anime-id="${item.animeId}">
-                        ${createStatusOptions(item.status)}
-                    </select>
-                </div>
-
-                <div class="tracking-row-info">
-                    <span>Рейтинг</span>
-                    <strong>★ ${rating}</strong>
-                </div>
-
-                <div class="tracking-row-info">
-                    <span>Моя оценка</span>
-                    <strong>${score}</strong>
-                </div>
-
-                <div class="tracking-row-actions">
-                    <button type="button" class="edit-list-btn" data-anime-id="${item.animeId}">
-                        Изменить
-                    </button>
-
-                    <button type="button" class="remove-list-btn" data-anime-id="${item.animeId}">
-                        Удалить
-                    </button>
-                </div>
-            </article>
-        `;
-    }).join("");
-}
-
-async function loadUserList() {
+async function changeStatus(animeId, status) {
     if (!requireAuth()) return;
 
     const userId = getCurrentUserId();
 
     try {
-        const response = await fetch(`${USERS_URL}/${userId}/list`);
-
-        if (!response.ok) {
-            throw new Error("Не удалось загрузить личный список");
-        }
-
-        userList = await response.json();
-        renderUserList();
-    } catch (error) {
-        listCount.textContent = "Ошибка загрузки";
-        userListGrid.innerHTML = `<p class="error-text">${escapeHtml(error.message)}</p>`;
-    }
-}
-
-async function updateListStatus(animeId, status) {
-    const userId = getCurrentUserId();
-    const item = userList.find(listItem => Number(listItem.animeId) === Number(animeId));
-
-    if (!userId || !item) return;
-
-    try {
-        const response = await fetch(`${USERS_URL}/${userId}/list/${animeId}`, {
+        const response = await fetch(`${USER_LIST_URL}/${userId}/${animeId}`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({
-                status,
-                score: item.score ?? null
-            })
+            body: JSON.stringify({ status })
         });
 
-        const data = await response.json().catch(() => null);
-
         if (!response.ok) {
-            throw new Error(data?.message || "Не удалось обновить статус");
+            throw new Error("Не удалось изменить статус");
         }
 
-        item.status = status;
-        item.updatedAt = new Date().toISOString();
-        renderUserList();
+        const item = userList.find(item => Number(item.animeId) === Number(animeId));
+
+        if (item) {
+            item.status = status;
+        }
+
+        updateStats();
+        applyCurrentView();
     } catch (error) {
-        alert(error.message || "Ошибка обновления статуса");
-        renderUserList();
+        alert(error.message);
     }
 }
 
 async function removeFromList(animeId) {
+    if (!requireAuth()) return;
+
     const userId = getCurrentUserId();
 
-    if (!userId) return;
-
-    const confirmed = confirm("Удалить аниме из списка?");
-    if (!confirmed) return;
+    if (!confirm("Удалить аниме из списка?")) return;
 
     try {
-        const response = await fetch(`${USERS_URL}/${userId}/list/${animeId}`, {
+        const response = await fetch(`${USER_LIST_URL}/${userId}/${animeId}`, {
             method: "DELETE"
         });
 
-        const data = await response.json().catch(() => null);
-
         if (!response.ok) {
-            throw new Error(data?.message || "Не удалось удалить аниме из списка");
+            throw new Error("Не удалось удалить аниме из списка");
         }
 
         userList = userList.filter(item => Number(item.animeId) !== Number(animeId));
-        renderUserList();
+
+        updateStats();
+        applyCurrentView();
     } catch (error) {
-        alert(error.message || "Ошибка удаления из списка");
+        alert(error.message);
     }
 }
 
-function syncStatusControls(status) {
-    document.querySelectorAll(".tracking-tab").forEach(button => {
-        button.classList.toggle("active", button.dataset.status === status);
-    });
-
-    document.querySelectorAll(".status-radio").forEach(input => {
-        input.checked = input.value === status;
-    });
-}
-
-function setCurrentStatus(status) {
-    currentStatus = status;
-    syncStatusControls(status);
-    renderUserList();
-}
-
-function setupListEvents() {
+function setupListPage() {
     document.querySelectorAll(".tracking-tab").forEach(button => {
         button.addEventListener("click", () => {
-            setCurrentStatus(button.dataset.status);
+            document.querySelectorAll(".tracking-tab").forEach(item => {
+                item.classList.remove("active");
+            });
+
+            button.classList.add("active");
+            currentStatus = button.dataset.status;
+            applyCurrentView();
         });
     });
-    document.querySelectorAll('input[name="listType"]').forEach(input => {
-    input.addEventListener("change", () => {
-        const checkedTypes = Array.from(document.querySelectorAll('input[name="listType"]:checked'))
-            .map(item => item.value);
 
-        currentType = checkedTypes.length > 0 ? checkedTypes[0] : "all";
-    });
-});
+    document.querySelectorAll(".filter-chip").forEach(button => {
+        button.addEventListener("click", () => {
+            document.querySelectorAll(".filter-chip").forEach(item => {
+                item.classList.remove("active");
+            });
 
-document.querySelectorAll('input[name="listGenre"]').forEach(input => {
-    input.addEventListener("change", () => {
-        currentGenres = Array.from(document.querySelectorAll('input[name="listGenre"]:checked'))
-            .map(item => item.value);
-    });
-});
-
-document.querySelectorAll(".filter-chip").forEach(button => {
-    button.addEventListener("click", () => {
-        document.querySelectorAll(".filter-chip").forEach(item => {
-            item.classList.remove("active");
+            button.classList.add("active");
+            currentRating = button.dataset.rating;
         });
-
-        button.classList.add("active");
-        currentRating = button.dataset.rating;
     });
-});
 
-if (applyListFiltersBtn) {
-    applyListFiltersBtn.addEventListener("click", () => {
-        currentYearFrom = Number(listYearFromInput?.value || 1950);
-        currentYearTo = Number(listYearToInput?.value || 2026);
+    if (applyListFiltersBtn) {
+        applyListFiltersBtn.addEventListener("click", () => {
+            currentYearFrom = Number(listYearFromInput?.value || 1950);
+            currentYearTo = Number(listYearToInput?.value || 2026);
+            applyCurrentView();
+        });
+    }
 
-        renderUserList();
-    });
+    if (resetListFiltersBtn) {
+        resetListFiltersBtn.addEventListener("click", () => {
+            currentStatus = "all";
+            currentRating = "all";
+            currentYearFrom = 1950;
+            currentYearTo = 2026;
+
+            if (listYearFromInput) listYearFromInput.value = "1950";
+            if (listYearToInput) listYearToInput.value = "2026";
+
+            document.querySelectorAll(".filter-chip").forEach(item => {
+                item.classList.remove("active");
+            });
+
+            document.querySelectorAll(".tracking-tab").forEach(item => {
+                item.classList.toggle("active", item.dataset.status === "all");
+            });
+
+            document.querySelectorAll('input[name="listType"]').forEach(input => {
+                input.checked = input.value === "TV Сериал";
+            });
+
+            document.querySelectorAll('input[name="listGenre"]').forEach(input => {
+                input.checked = false;
+            });
+
+            applyCurrentView();
+        });
+    }
 }
 
-if (resetListFiltersBtn) {
-    resetListFiltersBtn.addEventListener("click", () => {
-        currentStatus = "all";
-        currentType = "all";
-        currentGenres = [];
-        currentRating = "all";
-        currentYearFrom = 1950;
-        currentYearTo = 2026;
-        currentSort = "updated";
-
-        document.querySelectorAll('input[name="listType"]').forEach(input => {
-            input.checked = input.value === "TV Сериал";
-        });
-
-        document.querySelectorAll('input[name="listGenre"]').forEach(input => {
-            input.checked = false;
-        });
-
-        document.querySelectorAll(".filter-chip").forEach(button => {
-            button.classList.remove("active");
-        });
-
-        if (listYearFromInput) listYearFromInput.value = "1950";
-        if (listYearToInput) listYearToInput.value = "2026";
-
-        syncStatusControls("all");
-        renderUserList();
-    });
-}
-
-    userListGrid.addEventListener("change", event => {
-        const select = event.target.closest(".tracking-status-select");
-
-        if (!select) return;
-
-        updateListStatus(select.dataset.animeId, select.value);
-    });
-
-    userListGrid.addEventListener("click", event => {
-        const removeButton = event.target.closest(".remove-list-btn");
-        const editButton = event.target.closest(".edit-list-btn");
-        const row = event.target.closest(".tracking-row");
-
-        if (removeButton) {
-            removeFromList(removeButton.dataset.animeId);
-            return;
-        }
-
-        if (editButton) {
-            const select = row?.querySelector(".tracking-status-select");
-            if (select) select.focus();
-            return;
-        }
-
-        if (row && !event.target.closest("select") && !event.target.closest("button")) {
-            window.location.href = `../pages/anime.html?id=${row.dataset.animeId}`;
-        }
-    });
-}
-
-setupProfileButton();
-setupUserInfo();
-setupListEvents();
+setupListPage();
 loadUserList();

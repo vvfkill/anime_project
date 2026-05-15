@@ -2,240 +2,236 @@ const CATALOG_API_URL = "https://localhost:7241/api/anime";
 
 const catalogGrid = document.getElementById("catalogGrid");
 const catalogCount = document.getElementById("catalogCount");
-const catalogSearchInput = document.getElementById("catalogSearchInput");
-const catalogYearFromInput = document.getElementById("catalogYearFromInput");
-const catalogYearToInput = document.getElementById("catalogYearToInput");
 const catalogSortSelect = document.getElementById("catalogSortSelect");
-
 const applyCatalogFiltersBtn = document.getElementById("applyCatalogFiltersBtn");
 const resetCatalogFiltersBtn = document.getElementById("resetCatalogFiltersBtn");
 const prevPageBtn = document.getElementById("prevPageBtn");
 const nextPageBtn = document.getElementById("nextPageBtn");
 const pageInfo = document.getElementById("pageInfo");
+const catalogYearFromInput = document.getElementById("catalogYearFromInput");
+const catalogYearToInput = document.getElementById("catalogYearToInput");
 
+let catalogItems = [];
 let currentPage = 1;
-let currentPageSize = 12;
-let currentSearch = "";
-let currentYearFrom = "";
-let currentYearTo = "";
-let currentRating = "";
-let currentSort = "default";
+let pageSize = 24;
 let totalPages = 1;
-let currentItems = [];
+let currentSearch = "";
+let currentRating = "all";
+let currentSort = "default";
+let currentYearFrom = 1950;
+let currentYearTo = 2026;
 
-function getCurrentUser() {
-    const user = localStorage.getItem("authUser");
-    return user ? JSON.parse(user) : null;
-}
-
-function setupProfileButton() {
-    const profileBtn = document.querySelector(".profile-btn");
-
-    if (!profileBtn) return;
-
-    profileBtn.addEventListener("click", () => {
-        const user = getCurrentUser();
-
-        if (!user) {
-            window.location.href = "../pages/login.html";
-            return;
-        }
-
-        window.location.href = "profile.html";
-    });
+function getSearchFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("search") || "";
 }
 
 function getPosterUrl(posterUrl) {
     const fallbackPoster = "../images/no-poster.jpg";
 
-    if (!posterUrl || posterUrl.trim() === "") {
-        return fallbackPoster;
-    }
-
-    if (posterUrl.startsWith("http")) {
-        return posterUrl;
-    }
-
-    if (posterUrl.startsWith("../")) {
-        return posterUrl;
-    }
-
-    if (posterUrl.startsWith("images/")) {
-        return `../${posterUrl}`;
-    }
+    if (!posterUrl || posterUrl.trim() === "") return fallbackPoster;
+    if (posterUrl.startsWith("http")) return posterUrl;
+    if (posterUrl.startsWith("../")) return posterUrl;
+    if (posterUrl.startsWith("/")) return `https://localhost:7241${posterUrl}`;
+    if (posterUrl.startsWith("images/")) return `../${posterUrl}`;
 
     return posterUrl;
 }
 
-function buildCatalogUrl() {
+function getItemsFromResponse(data) {
+    if (Array.isArray(data)) {
+        totalPages = 1;
+        return data;
+    }
+
+    totalPages = data.totalPages || data.pages || 1;
+
+    if (Array.isArray(data.items)) return data.items;
+    if (Array.isArray(data.data)) return data.data;
+
+    return [];
+}
+
+function getAnimeTitle(anime) {
+    return anime.titleRu || anime.titleOriginal || anime.title || "Без названия";
+}
+
+function getAnimeGenres(anime) {
+    if (Array.isArray(anime.genres)) return anime.genres;
+    if (typeof anime.genres === "string") {
+        return anime.genres.split(",").map(item => item.trim());
+    }
+    if (typeof anime.genre === "string") return [anime.genre];
+
+    return [];
+}
+
+async function fetchCatalog() {
     const params = new URLSearchParams();
 
     params.set("page", currentPage);
-    params.set("pageSize", currentPageSize);
+    params.set("pageSize", pageSize);
 
     if (currentSearch) {
         params.set("search", currentSearch);
     }
 
-    if (currentYearFrom && currentYearTo && currentYearFrom === currentYearTo) {
-        params.set("year", currentYearFrom);
+    const response = await fetch(`${CATALOG_API_URL}?${params.toString()}`);
+
+    if (!response.ok) {
+        throw new Error("Не удалось загрузить каталог");
     }
 
-    if (currentRating) {
-        params.set("minRating", currentRating);
+    return await response.json();
+}
+
+function getSelectedValues(name) {
+    return [...document.querySelectorAll(`input[name="${name}"]:checked`)]
+        .map(input => input.value);
+}
+
+function getFilteredCatalog() {
+    const selectedTypes = getSelectedValues("catalogType");
+    const selectedGenres = getSelectedValues("catalogGenre");
+
+    return catalogItems.filter(item => {
+        const type = String(item.type || "").toLowerCase();
+        const genres = getAnimeGenres(item).map(genre => genre.toLowerCase());
+        const year = Number(item.releaseYear || 0);
+        const rating = Number(item.averageRating || 0);
+
+        const typeMatches =
+            selectedTypes.length === 0 ||
+            selectedTypes.some(selected => type.includes(selected.toLowerCase()));
+
+        const genreMatches =
+            selectedGenres.length === 0 ||
+            selectedGenres.some(selected => genres.includes(selected.toLowerCase()));
+
+        const yearMatches = year >= currentYearFrom && year <= currentYearTo;
+
+        const ratingMatches =
+            currentRating === "all" ||
+            rating >= Number(currentRating);
+
+        return typeMatches && genreMatches && yearMatches && ratingMatches;
+    });
+}
+
+function getSortedCatalog(list) {
+    const sorted = [...list];
+
+    if (currentSort === "rating") {
+        sorted.sort((a, b) => Number(b.averageRating || 0) - Number(a.averageRating || 0));
     }
 
-    return `${CATALOG_API_URL}?${params.toString()}`;
+    if (currentSort === "title") {
+        sorted.sort((a, b) => getAnimeTitle(a).localeCompare(getAnimeTitle(b), "ru"));
+    }
+
+    return sorted;
+}
+
+function renderCatalogCard(anime) {
+    const fallbackPoster = "../images/no-poster.jpg";
+    const poster = getPosterUrl(anime.posterUrl);
+    const title = getAnimeTitle(anime);
+
+    return `
+        <a class="catalog-card" href="anime.html?id=${anime.animeId}">
+            <img
+                src="${poster}"
+                alt="${title}"
+                onerror="this.onerror=null; this.src='${fallbackPoster}';"
+            >
+
+            <div class="catalog-card-body">
+                <h3>${title}</h3>
+                <p>${anime.titleOriginal || ""}</p>
+
+                <div class="catalog-card-meta">
+                    <span>${anime.releaseYear || "—"}</span>
+                    <span>★ ${anime.averageRating ?? "—"}</span>
+                </div>
+            </div>
+        </a>
+    `;
+}
+
+function renderCatalog(list) {
+    if (!catalogGrid) return;
+
+    if (!list || list.length === 0) {
+        catalogGrid.innerHTML = `
+            <div class="empty-state glass">
+                <h2>Ничего не найдено</h2>
+                <p>Попробуйте изменить фильтры или поисковый запрос.</p>
+            </div>
+        `;
+
+        if (catalogCount) {
+            catalogCount.textContent = "Найдено: 0";
+        }
+
+        return;
+    }
+
+    catalogGrid.innerHTML = list.map(renderCatalogCard).join("");
+
+    if (catalogCount) {
+        catalogCount.textContent = `Найдено: ${list.length}`;
+    }
+}
+
+function updatePagination() {
+    if (pageInfo) {
+        pageInfo.textContent = `Страница ${currentPage}`;
+    }
+
+    if (prevPageBtn) {
+        prevPageBtn.disabled = currentPage <= 1;
+    }
+
+    if (nextPageBtn) {
+        nextPageBtn.disabled = currentPage >= totalPages;
+    }
+}
+
+function applyCatalogView() {
+    const filtered = getFilteredCatalog();
+    const sorted = getSortedCatalog(filtered);
+
+    renderCatalog(sorted);
+    updatePagination();
 }
 
 async function loadCatalog() {
     try {
-        catalogGrid.innerHTML = "<p>Загрузка каталога...</p>";
-
-        const response = await fetch(buildCatalogUrl());
-
-        if (!response.ok) {
-            throw new Error("Не удалось загрузить каталог");
+        if (catalogGrid) {
+            catalogGrid.innerHTML = `<p>Загрузка каталога...</p>`;
         }
 
-        const data = await response.json();
+        const data = await fetchCatalog();
+        catalogItems = getItemsFromResponse(data);
 
-        currentItems = data.items || [];
-        totalPages = data.totalPages || 1;
-
-        renderCatalog();
-        updatePagination(data);
+        applyCatalogView();
     } catch (error) {
-        catalogCount.textContent = "Ошибка загрузки";
-        catalogGrid.innerHTML = `<p class="error-text">${error.message}</p>`;
-    }
-}
-
-function getSortedItems() {
-    const items = [...currentItems];
-
-    if (currentSort === "rating") {
-        items.sort((a, b) => Number(b.averageRating || 0) - Number(a.averageRating || 0));
-    }
-
-    if (currentSort === "title") {
-        items.sort((a, b) => {
-            const titleA = a.titleRu || a.titleOriginal || "";
-            const titleB = b.titleRu || b.titleOriginal || "";
-
-            return titleA.localeCompare(titleB, "ru");
-        });
-    }
-
-    return items;
-}
-
-function renderCatalog() {
-    const items = getSortedItems();
-
-    if (!items.length) {
-        catalogCount.textContent = "Ничего не найдено";
-        catalogGrid.innerHTML = `
-            <div class="empty-state glass">
-                <h2>Аниме не найдено</h2>
-                <p>Попробуйте изменить поиск или фильтры.</p>
-            </div>
-        `;
-        return;
-    }
-
-    catalogGrid.innerHTML = items.map(anime => {
-        const title = anime.titleRu || anime.titleOriginal || "Без названия";
-        const poster = getPosterUrl(anime.posterUrl);
-
-        return `
-            <a class="catalog-card glass" href="anime.html?id=${anime.animeId}">
-                <img
-                    src="${poster}"
-                    alt="${title}"
-                    onerror="this.onerror=null; this.src='../images/no-poster.jpg';"
-                >
-
-                <div class="catalog-card-body">
-                    <h3>${title}</h3>
-                    <p>${anime.titleOriginal || ""}</p>
-
-                    <div class="catalog-card-meta">
-                        <span>★ ${anime.averageRating ?? "—"}</span>
-                    </div>
+        if (catalogGrid) {
+            catalogGrid.innerHTML = `
+                <div class="empty-state glass">
+                    <h2>Ошибка загрузки</h2>
+                    <p>${error.message}</p>
                 </div>
-            </a>
-        `;
-    }).join("");
-}
-
-function updatePagination(data) {
-    const totalCount = data.totalCount || 0;
-
-    catalogCount.textContent = `Найдено: ${totalCount}`;
-    pageInfo.textContent = `Страница ${currentPage} из ${totalPages || 1}`;
-
-    prevPageBtn.disabled = currentPage <= 1;
-    nextPageBtn.disabled = currentPage >= totalPages;
-}
-
-function applyFilters() {
-    currentPage = 1;
-    currentSearch = catalogSearchInput.value.trim();
-    currentYearFrom = catalogYearFromInput.value.trim();
-    currentYearTo = catalogYearToInput.value.trim();
-    currentPageSize = 12;
-    loadCatalog();
-}
-
-function resetFilters() {
-    currentPage = 1;
-    currentSearch = "";
-    currentYearFrom = "";
-    currentYearTo = "";
-    currentPageSize = 12;
-    currentRating = "";
-    currentSort = "default";
-    
-
-    catalogSearchInput.value = "";
-    catalogYearFromInput.value = "1950";
-    catalogYearToInput.value = "2026";
-    catalogSortSelect.value = "default";
-
-    document.querySelectorAll(".filter-chip").forEach(button => {
-        button.classList.remove("active");
-    });
-
-    loadCatalog();
-}
-
-function setupCatalogEvents() {
-    applyCatalogFiltersBtn.addEventListener("click", applyFilters);
-    resetCatalogFiltersBtn.addEventListener("click", resetFilters);
-
-    catalogSearchInput.addEventListener("keydown", event => {
-        if (event.key === "Enter") {
-            applyFilters();
+            `;
         }
-    });
 
-    if (catalogYearFromInput) {
-        catalogYearFromInput.addEventListener("keydown", event => {
-            if (event.key === "Enter") {
-                applyFilters();
-            }
-        });
+        if (catalogCount) {
+            catalogCount.textContent = "Ошибка загрузки данных";
+        }
     }
+}
 
-    if (catalogYearToInput) {
-        catalogYearToInput.addEventListener("keydown", event => {
-            if (event.key === "Enter") {
-                applyFilters();
-            }
-        });
-    }
-
+function setupCatalogFilters() {
     document.querySelectorAll(".filter-chip").forEach(button => {
         button.addEventListener("click", () => {
             document.querySelectorAll(".filter-chip").forEach(item => {
@@ -247,26 +243,65 @@ function setupCatalogEvents() {
         });
     });
 
-    catalogSortSelect.addEventListener("change", () => {
-        currentSort = catalogSortSelect.value;
-        renderCatalog();
-    });
+    if (catalogSortSelect) {
+        catalogSortSelect.addEventListener("change", () => {
+            currentSort = catalogSortSelect.value;
+            applyCatalogView();
+        });
+    }
 
-    prevPageBtn.addEventListener("click", () => {
-        if (currentPage <= 1) return;
+    if (applyCatalogFiltersBtn) {
+        applyCatalogFiltersBtn.addEventListener("click", () => {
+            currentYearFrom = Number(catalogYearFromInput?.value || 1950);
+            currentYearTo = Number(catalogYearToInput?.value || 2026);
+            applyCatalogView();
+        });
+    }
 
-        currentPage--;
-        loadCatalog();
-    });
+    if (resetCatalogFiltersBtn) {
+        resetCatalogFiltersBtn.addEventListener("click", () => {
+            currentRating = "all";
+            currentSort = "default";
+            currentYearFrom = 1950;
+            currentYearTo = 2026;
 
-    nextPageBtn.addEventListener("click", () => {
-        if (currentPage >= totalPages) return;
+            if (catalogYearFromInput) catalogYearFromInput.value = "1950";
+            if (catalogYearToInput) catalogYearToInput.value = "2026";
+            if (catalogSortSelect) catalogSortSelect.value = "default";
 
-        currentPage++;
-        loadCatalog();
-    });
+            document.querySelectorAll('input[name="catalogType"]').forEach(input => {
+                input.checked = input.value === "TV Сериал";
+            });
+
+            document.querySelectorAll('input[name="catalogGenre"]').forEach(input => {
+                input.checked = false;
+            });
+
+            document.querySelectorAll(".filter-chip").forEach(item => {
+                item.classList.remove("active");
+            });
+
+            applyCatalogView();
+        });
+    }
+
+    if (prevPageBtn) {
+        prevPageBtn.addEventListener("click", async () => {
+            if (currentPage <= 1) return;
+            currentPage--;
+            await loadCatalog();
+        });
+    }
+
+    if (nextPageBtn) {
+        nextPageBtn.addEventListener("click", async () => {
+            if (currentPage >= totalPages) return;
+            currentPage++;
+            await loadCatalog();
+        });
+    }
 }
 
-setupProfileButton();
-setupCatalogEvents();
+currentSearch = getSearchFromUrl();
+setupCatalogFilters();
 loadCatalog();

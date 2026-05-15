@@ -8,31 +8,7 @@
 </head>
 <body>
     <div class="page-shell">
-        <header class="header glass">
-            <div class="logo">Anime<span>Track</span></div>
-
-            <nav class="nav">
-                <a href="#" class="active">Главная</a>
-                <a href="catalog.html">Каталог</a>
-                <a href="list.html">Список</a>
-                <a href="bookmarks.html">Закладки</a>
-                <a href="reviews.html">Отзывы</a>
-            </nav>
-
-            <a href="profile.html" class="profile-btn glass">
-                <span class="profile-icon">◉</span>
-                <span>Профиль</span>
-            </a>
-            
-        </header>
-
-        
-        <div class="search-row">
-            <div class="search-box glass">
-                <input id="searchInput" type="text" placeholder="Поиск аниме..." />
-                <button id="searchButton">Найти</button>
-            </div>
-        </div>
+        <div id="siteHeader"></div>
 
         <main class="main-content">
             <section class="hero glass">
@@ -49,42 +25,28 @@
                         <a class="secondary-btn" href="list.html">Мой список</a>
                     </div>
                 </div>
-
-                
             </section>
 
             <section class="content-section">
                 <div class="section-head">
                     <h2>Популярное аниме</h2>
-                    <button class="see-all-btn">Смотреть все</button>
+                    <button class="see-all-btn" type="button">Смотреть все</button>
                 </div>
 
                 <div class="slider-wrapper">
-                    <button class="slider-arrow left" data-target="popularAnime">‹</button>
                     <div id="popularAnime" class="anime-row"></div>
-                    <button class="slider-arrow right" data-target="popularAnime">›</button>
                 </div>
             </section>
 
             <section class="content-section">
                 <div class="section-head">
                     <h2>Новинки сезона</h2>
-                    <button class="see-all-btn">Смотреть все</button>
+                    <button class="see-all-btn" type="button">Смотреть все</button>
                 </div>
 
                 <div class="slider-wrapper">
-                    <button class="slider-arrow left" data-target="newAnime">‹</button>
                     <div id="newAnime" class="anime-row"></div>
-                    <button class="slider-arrow right" data-target="newAnime">›</button>
                 </div>
-            </section>
-
-            <section class="content-section">
-                <div class="section-head">
-                    <h2>Результаты поиска</h2>
-                </div>
-
-                <div id="searchResults" class="anime-row search-row-results"></div>
             </section>
         </main>
 
@@ -102,6 +64,7 @@
         </footer>
     </div>
 
+    <script src="../js/header.js"></script>
     <script src="../js/app.js"></script>
 </body>
 </html>

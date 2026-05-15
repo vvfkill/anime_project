@@ -8,22 +8,7 @@
 </head>
 <body class="reviews-page">
     <div class="page-shell">
-        <header class="header glass">
-            <div class="logo">Anime<span>Track</span></div>
-
-            <nav class="nav">
-                <a href="index.html">Главная</a>
-                <a href="catalog.html">Каталог</a>
-                <a href="list.html">Список</a>
-                <a href="bookmarks.html">Закладки</a>
-                <a href="reviews.html" class="active">Отзывы</a>
-            </nav>
-
-            <button type="button" class="profile-btn glass">
-                <span class="profile-icon">◉</span>
-                <span>Профиль</span>
-            </button>
-        </header>
+        <div id="siteHeader"></div>
 
         <main class="reviews-layout">
             <aside class="filters-panel glass">
@@ -32,7 +17,6 @@
                 <div class="filter-group">
                     <div class="filter-title-row">
                         <h3>Тип</h3>
-                        <span class="filter-arrow">⌃</span>
                     </div>
 
                     <label class="filter-check">
@@ -64,7 +48,6 @@
                 <div class="filter-group">
                     <div class="filter-title-row">
                         <h3>Жанры</h3>
-                        <span class="filter-arrow">⌃</span>
                     </div>
 
                     <label class="filter-check">
@@ -147,6 +130,7 @@
         </main>
     </div>
 
+    <script src="../js/header.js"></script>
     <script src="../js/reviews.js"></script>
 </body>
 </html>

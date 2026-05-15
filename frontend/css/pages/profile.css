@@ -1,26 +1,5 @@
 /* pages/profile.css */
 
-.profile-btn {
-    justify-self: end;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 18px;
-    border-radius: 999px;
-    color: white;
-    font-size: 0.95rem;
-}
-
-.profile-icon {
-    color: #b89cff;
-}
-
-@media (max-width: 1100px) {
-.profile-btn {
-        justify-self: center;
-    }
-}
-
 .profile-layout {
     display: grid;
     grid-template-columns: 240px minmax(0, 1fr);
@@ -296,57 +275,57 @@
 }
 
 @media (max-width: 1200px) {
-.profile-stats {
+    .profile-stats {
         grid-template-columns: repeat(3, 1fr);
     }
 
-.profile-stat {
+    .profile-stat {
         border-right: none;
     }
 
-.profile-grid {
+    .profile-grid {
         grid-template-columns: 1fr;
     }
 
-.profile-wide-panel {
+    .profile-wide-panel {
         grid-column: auto;
     }
 }
 
 @media (max-width: 900px) {
-.profile-layout {
+    .profile-layout {
         grid-template-columns: 1fr;
     }
 
-.profile-hero {
+    .profile-hero {
         grid-template-columns: 1fr;
     }
 
-.profile-avatar {
+    .profile-avatar {
         width: 120px;
         height: 120px;
         font-size: 3rem;
     }
 
-.profile-bookmark-row {
+    .profile-bookmark-row {
         grid-template-columns: repeat(3, 1fr);
     }
 }
 
 @media (max-width: 620px) {
-.profile-stats {
+    .profile-stats {
         grid-template-columns: 1fr 1fr;
     }
 
-.profile-mini-item {
+    .profile-mini-item {
         grid-template-columns: 70px 1fr;
     }
 
-.profile-mini-item button {
+    .profile-mini-item button {
         grid-column: 1 / -1;
     }
 
-.profile-bookmark-row {
+    .profile-bookmark-row {
         grid-template-columns: repeat(2, 1fr);
     }
 }

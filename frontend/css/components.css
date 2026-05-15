@@ -14,10 +14,13 @@
     align-items: center;
     justify-content: center;
     padding: 15px 26px;
+    border: none;
     border-radius: 999px;
     font-size: 1rem;
     font-weight: 600;
     text-decoration: none;
+    cursor: pointer;
+    transition: 0.2s ease;
 }
 
 .primary-btn {
@@ -26,10 +29,19 @@
     box-shadow: 0 10px 30px rgba(139, 92, 246, 0.35);
 }
 
+.primary-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 34px rgba(139, 92, 246, 0.44);
+}
+
 .secondary-btn {
     color: white;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.secondary-btn:hover {
+    background: rgba(255, 255, 255, 0.10);
 }
 
 .wide-btn {
@@ -55,13 +67,11 @@
     margin-bottom: 20px;
 }
 
-@media (max-width: 640px) {
 .list-action {
     display: flex;
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
-}
 }
 
 .filters-panel {
@@ -209,4 +219,36 @@
     justify-content: center;
     background: rgba(16, 13, 34, 0.62);
     border: 1px solid rgba(160, 120, 255, 0.18);
+}
+
+.sort-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: rgba(120, 92, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.sort-box span {
+    color: #f4f0ff;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.sort-box select {
+    min-width: 170px;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.sort-box select option {
+    background: #171026;
+    color: #fff;
 }

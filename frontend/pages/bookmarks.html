@@ -8,23 +8,7 @@
 </head>
 <body class="bookmarks-page">
     <div class="page-shell">
-        <header class="header glass">
-            <div class="logo">Anime<span>Track</span></div>
-
-            <nav class="nav">
-                <a href="index.html">Главная</a>
-                <a href="catalog.html">Каталог</a>
-                <a href="list.html">Список</a>
-                <a href="bookmarks.html" class="active">Закладки</a>
-                <a href="reviews.html">Отзывы</a>
-            </nav>
-
-                <button type="button" class="profile-btn glass">
-                    <span class="profile-icon">◉</span>
-                    <span>Профиль</span>
-                </button>
-            </div>
-        </header>
+        <div id="siteHeader"></div>
 
         <main class="bookmarks-layout">
             <aside class="filters-panel glass">
@@ -120,7 +104,7 @@
                 <button type="button" id="resetFiltersBtn" class="secondary-btn wide-btn">
                     Сбросить все
                 </button>
-            </aside>           
+            </aside>
 
             <section class="bookmarks-content">
                 <div class="section-header-row">
@@ -157,6 +141,7 @@
         </main>
     </div>
 
+    <script src="../js/header.js"></script>
     <script src="../js/bookmarks.js"></script>
 </body>
 </html>
