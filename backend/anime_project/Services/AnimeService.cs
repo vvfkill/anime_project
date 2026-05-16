@@ -89,40 +89,65 @@ public class AnimeService : IAnimeService
         };
     }
 
-    public async Task<AnimeDto?> GetAnimeByIdAsync(int id)
-    {
-        var anime = await _context.animes
-            .Include(a => a.genres)
-            .Include(a => a.studios)
-            .Include(a => a.tags)
-            .Include(a => a.categories)
-            .Include(a => a.seasons)
-            .Include(a => a.anime_characters)
-                .ThenInclude(c => c.seiyus)
-            .Include(a => a.reviews)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(a => a.anime_id == id);
+public async Task<AnimeDto?> GetAnimeByIdAsync(int id)
+{
+    var anime = await _context.animes
+        .Include(a => a.genres)
+        .Include(a => a.studios)
+        .Include(a => a.tags)
+        .Include(a => a.categories)
+        .Include(a => a.seasons)
+        .Include(a => a.reviews)
+        .AsNoTracking()
+        .FirstOrDefaultAsync(a => a.anime_id == id);
 
-        if (anime == null)
-            return null;
+    if (anime == null)
+        return null;
 
-        return new AnimeDto
+    var characters = await _context.anime_characters
+        .Where(c => c.anime_id == id)
+        .Include(c => c.seiyus)
+        .AsNoTracking()
+        .Select(c => new AnimeCharacterDto
         {
-            AnimeId = anime.anime_id,
-            TitleRu = anime.title_ru,
-            TitleOriginal = anime.title_original,
-            Description = anime.description,
-            FullDescription = anime.full_description,
-            ReleaseYear = anime.release_year,
-            EpisodesTotal = anime.episodes_total,
-            AverageRating = anime.average_rating,
-            PosterUrl = anime.poster_url,
+            CharacterId = c.character_id,
+            Name = c.name,
+            NameOriginal = c.name_original,
+            Description = c.description,
+            Gender = c.gender,
+            RoleType = c.role_type,
+            ImageUrl = c.image_url,
 
-            Genres = anime.genres.Select(g => g.name).ToList(),
-            Studios = anime.studios.Select(s => s.name).ToList(),
-            Tags = anime.tags.Select(t => t.name).ToList()
-        };
-    }
+            Seiyus = c.seiyus.Select(s => new AnimeSeiyuDto
+            {
+                SeiyuId = s.seiyu_id,
+                Name = s.name,
+                NameOriginal = s.name_original,
+                Country = s.country,
+                PhotoUrl = s.photo_url
+            }).ToList()
+        })
+        .ToListAsync();
+
+    return new AnimeDto
+    {
+        AnimeId = anime.anime_id,
+        TitleRu = anime.title_ru,
+        TitleOriginal = anime.title_original,
+        Description = anime.description,
+        FullDescription = anime.full_description,
+        ReleaseYear = anime.release_year,
+        EpisodesTotal = anime.episodes_total,
+        AverageRating = anime.average_rating,
+        PosterUrl = anime.poster_url,
+
+        Genres = anime.genres.Select(g => g.name).ToList(),
+        Studios = anime.studios.Select(s => s.name).ToList(),
+        Tags = anime.tags.Select(t => t.name).ToList(),
+
+        Characters = characters
+    };
+}
 
     public async Task<int> CreateAnimeAsync(CreateAnimeDto dto)
     {
