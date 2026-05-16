@@ -972,3 +972,135 @@
         height: 120px;
     }
 }
+.anime-hero-card {
+    position: relative;
+    z-index: 20;
+    overflow: visible !important;
+}
+
+.anime-hero-layout {
+    position: relative;
+    overflow: visible !important;
+}
+
+.anime-action-row {
+    position: relative;
+    z-index: 60;
+}
+
+.custom-list-dropdown {
+    position: relative;
+    z-index: 100;
+}
+
+.list-dropdown-menu {
+    z-index: 200;
+}
+
+.anime-bottom-layout {
+    position: relative;
+    z-index: 1;
+}
+.review-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 22px;
+    padding: 18px;
+    border-radius: 18px;
+    background: rgba(120, 92, 255, 0.08);
+    border: 1px solid rgba(160, 120, 255, 0.18);
+}
+
+.review-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: #fff;
+    font-weight: 700;
+}
+
+.review-form select,
+.review-form textarea {
+    width: 100%;
+    border: 1px solid rgba(160, 120, 255, 0.24);
+    border-radius: 14px;
+    background: rgba(15, 12, 33, 0.78);
+    color: #fff;
+    outline: none;
+    font: inherit;
+}
+
+.review-form select {
+    height: 46px;
+    padding: 0 14px;
+}
+
+.review-form textarea {
+    resize: vertical;
+    min-height: 130px;
+    padding: 14px;
+    line-height: 1.6;
+}
+
+.review-form-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.anime-review-card {
+    display: grid;
+    grid-template-columns: 54px 1fr;
+    gap: 14px;
+    padding: 18px;
+    border-radius: 18px;
+    background: rgba(120, 92, 255, 0.08);
+    border: 1px solid rgba(160, 120, 255, 0.14);
+}
+
+.anime-review-avatar {
+    width: 54px;
+    height: 54px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: #fff;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+
+.anime-review-body {
+    min-width: 0;
+}
+
+.anime-review-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 10px;
+}
+
+.anime-review-top h3 {
+    margin: 0 0 4px;
+    color: #fff;
+    font-size: 1rem;
+}
+
+.anime-review-top p {
+    margin: 0;
+    color: var(--text-soft);
+    font-size: 0.86rem;
+}
+
+.anime-review-score {
+    flex: 0 0 auto;
+    color: #ffd166;
+    font-weight: 800;
+}
+
+.anime-review-text {
+    margin: 0;
+    color: var(--text-soft);
+    line-height: 1.7;
+}

@@ -1,5 +1,5 @@
 const ANIME_API_URL = "https://localhost:7241/api/anime";
-const USER_LIST_API_URL = "https://localhost:7241/api/userlist";
+const USERS_API_URL = "https://localhost:7241/api/users";
 const BOOKMARKS_API_URL = "https://localhost:7241/api/bookmarks";
 const REVIEWS_API_URL = "https://localhost:7241/api/reviews";
 
@@ -109,16 +109,51 @@ async function fetchAnimeById(animeId) {
     return await response.json();
 }
 
-async function fetchReviewsByAnime(animeId) {
-    try {
-        const response = await fetch(`${REVIEWS_API_URL}/anime/${animeId}`);
+function renderReviews(reviews) {
+    if (!reviewsContainer) return;
 
-        if (!response.ok) return [];
-
-        return await response.json();
-    } catch {
-        return [];
+    if (!reviews || reviews.length === 0) {
+        reviewsContainer.innerHTML = `
+            <div class="empty-tab-state">
+                <p>Отзывов пока нет. Станьте первым, кто оставит мнение об этом аниме.</p>
+            </div>
+        `;
+        return;
     }
+
+    reviewsContainer.innerHTML = reviews.map(review => {
+        const author = review.userNickname || review.nickname || review.userName || "Пользователь";
+        const score = review.score ?? review.rating ?? "—";
+        const text = review.text || review.comment || "Текст отзыва отсутствует.";
+        const date = review.createdAt
+            ? new Date(review.createdAt).toLocaleDateString("ru-RU")
+            : "—";
+
+        return `
+            <article class="anime-review-card">
+                <div class="anime-review-avatar">
+                    ${author[0]?.toUpperCase() || "A"}
+                </div>
+
+                <div class="anime-review-body">
+                    <div class="anime-review-top">
+                        <div>
+                            <h3>${author}</h3>
+                            <p>${date}</p>
+                        </div>
+
+                        <div class="anime-review-score">
+                            ★ ${score}
+                        </div>
+                    </div>
+
+                    <p class="anime-review-text">
+                        ${text}
+                    </p>
+                </div>
+            </article>
+        `;
+    }).join("");
 }
 
 function renderAnimeDetails(anime) {
@@ -267,26 +302,30 @@ function setupAnimeActions(anime) {
     }
 
     document.querySelectorAll(".list-dropdown-menu button").forEach(button => {
-        button.addEventListener("click", async () => {
-            const status = button.dataset.status;
+    button.addEventListener("click", async () => {
+        const status = button.dataset.status;
 
-            await addAnimeToList(anime.animeId, status);
+        const saved = await addAnimeToList(anime.animeId, status);
 
-            if (dropdownText) {
-                dropdownText.textContent = status;
-            }
+        if (!saved) {
+            return;
+        }
 
-            document.querySelectorAll(".list-dropdown-menu button").forEach(item => {
-                item.classList.remove("active");
-            });
+        if (dropdownText) {
+            dropdownText.textContent = status;
+        }
 
-            button.classList.add("active");
-
-            if (dropdown) {
-                dropdown.classList.remove("open");
-            }
+        document.querySelectorAll(".list-dropdown-menu button").forEach(item => {
+            item.classList.remove("active");
         });
+
+        button.classList.add("active");
+
+        if (dropdown) {
+            dropdown.classList.remove("open");
+        }
     });
+});
 
     if (bookmarkBtn) {
         bookmarkBtn.addEventListener("click", async () => {
@@ -301,33 +340,59 @@ function setupAnimeActions(anime) {
             dropdown.classList.remove("open");
         }
     });
+
+    loadCurrentAnimeListStatus(anime.animeId);
 }
 
 async function addAnimeToList(animeId, status) {
-    if (!requireAuth()) return;
+    if (!requireAuth()) return false;
 
     const userId = getCurrentUserId();
 
+    const payload = {
+        animeId: Number(animeId),
+        status: status,
+        score: null
+    };
+
     try {
-        const response = await fetch(USER_LIST_API_URL, {
+        const postResponse = await fetch(`${USERS_API_URL}/${userId}/list`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({
-                userId,
-                animeId,
-                status
-            })
+            body: JSON.stringify(payload)
         });
 
-        if (!response.ok) {
-            throw new Error("Не удалось добавить аниме в список");
+        if (postResponse.ok) {
+            return true;
         }
 
-        alert(`Аниме добавлено в список: ${status}`);
+        if (postResponse.status === 409) {
+            const putResponse = await fetch(`${USERS_API_URL}/${userId}/list/${animeId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    status: status,
+                    score: null
+                })
+            });
+
+            if (!putResponse.ok) {
+                const errorData = await putResponse.json().catch(() => null);
+                throw new Error(errorData?.message || "Не удалось обновить статус аниме");
+            }
+
+            return true;
+        }
+
+        const errorData = await postResponse.json().catch(() => null);
+        throw new Error(errorData?.message || "Не удалось добавить аниме в список");
     } catch (error) {
         alert(error.message);
+        return false;
     }
 }
 
@@ -493,8 +558,39 @@ function renderCharacters(characters) {
     }).join("");
 }
 
+async function createReview(animeId, score, text) {
+    if (!requireAuth()) return false;
+
+    const userId = getCurrentUserId();
+
+    try {
+        const response = await fetch(REVIEWS_API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                userId: Number(userId),
+                animeId: Number(animeId),
+                score: Number(score),
+                text: text
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.message || "Не удалось опубликовать отзыв");
+        }
+
+        return true;
+    } catch (error) {
+        alert(error.message);
+        return false;
+    }
+}
+
 function setupWriteReviewButton() {
-    if (!writeReviewBtn) return;
+    if (!writeReviewBtn || !currentAnime) return;
 
     writeReviewBtn.addEventListener("click", () => {
         const user = getCurrentUser();
@@ -505,8 +601,134 @@ function setupWriteReviewButton() {
             return;
         }
 
-        alert("Форма написания отзыва будет добавлена следующим шагом.");
+        const existingForm = document.getElementById("reviewForm");
+
+        if (existingForm) {
+            existingForm.remove();
+            return;
+        }
+
+        const form = document.createElement("form");
+        form.id = "reviewForm";
+        form.className = "review-form";
+
+        form.innerHTML = `
+            <div class="review-form-row">
+                <label>
+                    Оценка
+                    <select id="reviewScore" required>
+                        <option value="">Выберите оценку</option>
+                        <option value="10">10 — отлично</option>
+                        <option value="9">9 — очень хорошо</option>
+                        <option value="8">8 — хорошо</option>
+                        <option value="7">7 — нормально</option>
+                        <option value="6">6 — средне</option>
+                        <option value="5">5 — спорно</option>
+                        <option value="4">4 — слабо</option>
+                        <option value="3">3 — плохо</option>
+                        <option value="2">2 — очень плохо</option>
+                        <option value="1">1 — ужасно</option>
+                    </select>
+                </label>
+            </div>
+
+            <label>
+                Текст отзыва
+                <textarea id="reviewText" rows="5" placeholder="Напишите своё мнение..." required></textarea>
+            </label>
+
+            <div class="review-form-actions">
+                <button type="submit" class="primary-btn">Опубликовать</button>
+                <button type="button" class="outline-action-btn" id="cancelReviewBtn">Отмена</button>
+            </div>
+        `;
+
+        const reviewsTab = document.getElementById("reviewsTab");
+        const reviewsHeader = reviewsTab?.querySelector(".reviews-header");
+
+        if (reviewsHeader) {
+            reviewsHeader.insertAdjacentElement("afterend", form);
+        }
+
+        const cancelBtn = document.getElementById("cancelReviewBtn");
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener("click", () => {
+                form.remove();
+            });
+        }
+
+        form.addEventListener("submit", async event => {
+            event.preventDefault();
+
+            const score = document.getElementById("reviewScore")?.value;
+            const text = document.getElementById("reviewText")?.value.trim();
+
+            if (!score || !text) {
+                alert("Заполните оценку и текст отзыва");
+                return;
+            }
+
+            const saved = await createReview(currentAnime.animeId, score, text);
+
+            if (!saved) return;
+
+            form.remove();
+
+            const reviews = await fetchReviewsByAnime(currentAnime.animeId);
+            renderReviews(reviews);
+        });
     });
+}
+
+async function loadCurrentAnimeListStatus(animeId) {
+    const userId = getCurrentUserId();
+
+    if (!userId) return;
+
+    try {
+        const response = await fetch(`${USERS_API_URL}/${userId}/list`);
+
+        if (!response.ok) return;
+
+        const list = await response.json();
+
+        const currentItem = list.find(item =>
+            Number(item.animeId || item.anime_id) === Number(animeId)
+        );
+
+        if (!currentItem) return;
+
+        const status = currentItem.status;
+
+        if (!status) return;
+
+        const dropdownText = document.getElementById("listDropdownText");
+
+        if (dropdownText) {
+            dropdownText.textContent = status;
+        }
+
+        document.querySelectorAll(".list-dropdown-menu button").forEach(button => {
+            button.classList.toggle("active", button.dataset.status === status);
+        });
+    } catch {
+        // Не мешаем загрузке страницы, если список не удалось получить.
+    }
+}
+
+async function fetchReviewsByAnime(animeId) {
+    try {
+        const response = await fetch(`${ANIME_API_URL}/${animeId}/reviews`);
+
+        if (!response.ok) {
+            return [];
+        }
+
+        return await response.json();
+    } catch {
+        return [];
+    }
 }
 
 async function loadAnimePage() {
