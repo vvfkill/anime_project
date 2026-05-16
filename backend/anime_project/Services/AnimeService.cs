@@ -98,6 +98,7 @@ public class AnimeService : IAnimeService
             .Include(a => a.categories)
             .Include(a => a.seasons)
             .Include(a => a.anime_characters)
+                .ThenInclude(c => c.seiyus)
             .Include(a => a.reviews)
             .AsNoTracking()
             .FirstOrDefaultAsync(a => a.anime_id == id);
@@ -111,6 +112,7 @@ public class AnimeService : IAnimeService
             TitleRu = anime.title_ru,
             TitleOriginal = anime.title_original,
             Description = anime.description,
+            FullDescription = anime.full_description,
             ReleaseYear = anime.release_year,
             EpisodesTotal = anime.episodes_total,
             AverageRating = anime.average_rating,

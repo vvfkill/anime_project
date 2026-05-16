@@ -7,6 +7,9 @@ const animeDetails = document.getElementById("animeDetails");
 const reviewsContainer = document.getElementById("reviewsContainer");
 const ratingValue = document.getElementById("ratingValue");
 const ratingSubtext = document.getElementById("ratingSubtext");
+const descriptionContainer = document.getElementById("descriptionContainer");
+const writeReviewBtn = document.getElementById("writeReviewBtn");
+const charactersContainer = document.getElementById("charactersContainer");
 
 let currentAnime = null;
 
@@ -56,6 +59,32 @@ function getPosterUrl(posterUrl) {
     return posterUrl;
 }
 
+function getCharacterImageUrl(imageUrl) {
+    const fallbackImage = "../images/no-poster.jpg";
+
+    if (!imageUrl || String(imageUrl).trim() === "") {
+        return fallbackImage;
+    }
+
+    if (imageUrl.startsWith("http")) {
+        return imageUrl;
+    }
+
+    if (imageUrl.startsWith("../")) {
+        return imageUrl;
+    }
+
+    if (imageUrl.startsWith("/")) {
+        return `https://localhost:7241${imageUrl}`;
+    }
+
+    if (imageUrl.startsWith("images/")) {
+        return `../${imageUrl}`;
+    }
+
+    return imageUrl;
+}
+
 function getAnimeTitle(anime) {
     return anime.titleRu || anime.titleOriginal || anime.title || "Без названия";
 }
@@ -99,85 +128,124 @@ function renderAnimeDetails(anime) {
     const poster = getPosterUrl(anime.posterUrl);
     const title = getAnimeTitle(anime);
     const genres = getAnimeGenres(anime);
+    const rating = anime.averageRating ?? "—";
 
     animeDetails.innerHTML = `
-        <div class="anime-top-layout">
-            <div class="anime-poster-column">
+        <div class="anime-hero-layout">
+            <div class="anime-poster-area">
                 <img
-                    class="anime-big-poster"
+                    class="anime-main-poster"
                     src="${poster}"
                     alt="${title}"
                     onerror="this.onerror=null; this.src='${fallbackPoster}';"
                 >
 
-                <div class="custom-list-dropdown" id="listDropdown">
-                    <button type="button" class="list-dropdown-main" id="listDropdownBtn">
-                        <span class="list-plus">+</span>
-                        <span id="listDropdownText">Добавить в список</span>
-                        <span class="list-arrow">›</span>
-                    </button>
-
-                    <div class="list-dropdown-menu">
-                        <button type="button" data-status="Просмотрено">Просмотрено</button>
-                        <button type="button" data-status="Смотрю">Смотрю</button>
-                        <button type="button" data-status="Запланировано">Запланировано</button>
-                        <button type="button" data-status="Брошено">Брошено</button>
-                        <button type="button" data-status="Отложено">Отложено</button>
-                        <button type="button" data-status="Пересматриваю">Пересматриваю</button>
-                    </div>
-                </div>
-
-                <button type="button" class="secondary-btn wide-btn" id="bookmarkBtn">
-                    В избранное
+                <button type="button" class="trailer-btn">
+                    ▶ Смотреть трейлер
                 </button>
             </div>
 
-            <div class="anime-main-info">
+            <div class="anime-info-area">
                 <div class="breadcrumbs">
                     <a href="index.html">Главная</a>
+                    <span>/</span>
+                    <a href="catalog.html">Каталог</a>
                     <span>/</span>
                     <span>${title}</span>
                 </div>
 
-                <h1>${title}</h1>
-                <p class="original-subtitle">${anime.titleOriginal || ""}</p>
-
-                <div class="meta-pills">
-                    <span class="pill">Год: ${anime.releaseYear || "—"}</span>
-                    <span class="pill">Эпизоды: ${anime.episodesTotal || "—"}</span>
-                    <span class="pill">Рейтинг: ${anime.averageRating ?? "—"}</span>
+                <div class="anime-title-row">
+                    <h1>${title}</h1>
+                    <button type="button" class="small-favorite-btn">★</button>
                 </div>
 
-                <p class="anime-main-description">
+                <p class="anime-original-name">${anime.titleOriginal || ""}</p>
+
+                <div class="anime-tags-row">
+                    <span>${anime.type || "—"}</span>
+                    <span>${anime.releaseYear || "—"}</span>
+                    <span>${anime.status || "Завершён"}</span>
+                    <span class="age-tag">18+</span>
+                </div>
+
+                <p class="anime-short-description">
                     ${anime.description || "Описание пока не добавлено."}
                 </p>
 
-                <div class="meta-pills">
-                    ${genres.map(genre => `<span class="pill secondary">${genre}</span>`).join("")}
+                <div class="anime-genres-row">
+                    ${genres.length
+                        ? genres.map(genre => `<span>${genre}</span>`).join("")
+                        : `<span>Жанры не указаны</span>`
+                    }
+                </div>
+
+                <div class="anime-action-row">
+                    <div class="custom-list-dropdown" id="listDropdown">
+                        <button type="button" class="list-dropdown-main" id="listDropdownBtn">
+                            <span class="list-plus">+</span>
+                            <span id="listDropdownText">Добавить в мой список</span>
+                            <span class="list-arrow">›</span>
+                        </button>
+
+                        <div class="list-dropdown-menu">
+                            <button type="button" data-status="Просмотрено">Просмотрено</button>
+                            <button type="button" data-status="Смотрю">Смотрю</button>
+                            <button type="button" data-status="Запланировано">Запланировано</button>
+                            <button type="button" data-status="Брошено">Брошено</button>
+                            <button type="button" data-status="Отложено">Отложено</button>
+                            <button type="button" data-status="Пересматриваю">Пересматриваю</button>
+                        </div>
+                    </div>
+
+                    <button type="button" class="outline-action-btn" id="bookmarkBtn">
+                        ♡ В избранное
+                    </button>
+
+                    <button type="button" class="outline-action-btn">
+                        ☆ Оценить
+                    </button>
                 </div>
             </div>
 
+            <div class="anime-rating-mini">
+                <strong>★ ${rating}</strong>
+                <span>Средняя оценка</span>
+            </div>
+
             <aside class="anime-side-info">
-                <h3>Информация</h3>
-
                 <div class="info-line">
-                    <span>Тип</span>
-                    <span>${anime.type || "—"}</span>
+                    <span>Студия:</span>
+                    <strong>${anime.studio || "—"}</strong>
                 </div>
 
                 <div class="info-line">
-                    <span>Год выпуска</span>
-                    <span>${anime.releaseYear || "—"}</span>
+                    <span>Режиссёр:</span>
+                    <strong>${anime.director || "—"}</strong>
                 </div>
 
                 <div class="info-line">
-                    <span>Количество серий</span>
-                    <span>${anime.episodesTotal || "—"}</span>
+                    <span>Автор оригинала:</span>
+                    <strong>${anime.author || "—"}</strong>
                 </div>
 
                 <div class="info-line">
-                    <span>Жанры</span>
-                    <span>${genres.length ? genres.join(", ") : "—"}</span>
+                    <span>Эпизоды:</span>
+                    <strong>${anime.episodesTotal || "—"}</strong>
+                </div>
+
+                <div class="info-line">
+                    <span>Длительность:</span>
+                    <strong>${anime.duration || "24 мин."}</strong>
+                </div>
+
+                <div class="info-line">
+                    <span>Статус:</span>
+                    <strong>${anime.status || "Завершён"}</strong>
+                </div>
+
+                <div class="info-line">
+                    <span>Жанр:</span>
+                    <strong>${genres.length ? genres.join(", ") : "—"}</strong>
                 </div>
             </aside>
         </div>
@@ -325,6 +393,122 @@ function renderRating(anime) {
     }
 }
 
+function setupAnimeTabs() {
+    const tabButtons = document.querySelectorAll(".tab-btn");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    tabButtons.forEach(button => {
+        button.addEventListener("click", () => {
+            const tabName = button.dataset.tab;
+
+            tabButtons.forEach(item => {
+                item.classList.remove("active");
+            });
+
+            tabContents.forEach(content => {
+                content.classList.remove("active");
+            });
+
+            button.classList.add("active");
+
+            const targetTab = document.getElementById(`${tabName}Tab`);
+
+            if (targetTab) {
+                targetTab.classList.add("active");
+            }
+        });
+    });
+}
+
+function renderDescription(anime) {
+    if (!descriptionContainer) return;
+
+    const fullDescription =
+        anime.fullDescription ||
+        anime.full_description ||
+        anime.description ||
+        "Описание пока не добавлено.";
+
+    descriptionContainer.innerHTML = `
+        <div class="anime-description-block">
+            <p>${fullDescription}</p>
+        </div>
+    `;
+}
+function renderCharacters(characters) {
+    if (!charactersContainer) return;
+
+    if (!characters || characters.length === 0) {
+        charactersContainer.innerHTML = `
+            <div class="empty-tab-state">
+                <p>Информация о персонажах пока не добавлена.</p>
+            </div>
+        `;
+        return;
+    }
+
+    charactersContainer.innerHTML = characters.map(character => {
+        const image = getCharacterImageUrl(character.imageUrl || character.image_url);
+        const name = character.name || "Без имени";
+        const originalName = character.nameOriginal || character.name_original || "";
+        const roleType = character.roleType || character.role_type || "Персонаж";
+        const description = character.description || "Описание персонажа пока не добавлено.";
+        const seiyus = character.seiyus || [];
+
+        return `
+            <article class="character-card">
+                <img
+                    src="${image}"
+                    alt="${name}"
+                    onerror="this.onerror=null; this.src='../images/no-poster.jpg';"
+                >
+
+                <div class="character-card-body">
+                    <div class="character-card-head">
+                        <div>
+                            <h3>${name}</h3>
+                            <p>${originalName}</p>
+                        </div>
+
+                        <span>${roleType}</span>
+                    </div>
+
+                    <p class="character-description">
+                        ${description}
+                    </p>
+
+                    <div class="character-seiyu">
+                        <strong>Сэйю:</strong>
+                        <span>
+                            ${
+                                seiyus.length
+                                    ? seiyus.map(seiyu => seiyu.name).join(", ")
+                                    : "Не указан"
+                            }
+                        </span>
+                    </div>
+                </div>
+            </article>
+        `;
+    }).join("");
+}
+
+function setupWriteReviewButton() {
+    if (!writeReviewBtn) return;
+
+    writeReviewBtn.addEventListener("click", () => {
+        const user = getCurrentUser();
+
+        if (!user) {
+            alert("Сначала войдите в аккаунт");
+            window.location.href = "login.html";
+            return;
+        }
+
+        alert("Форма написания отзыва будет добавлена следующим шагом.");
+    });
+}
+
 async function loadAnimePage() {
     const animeId = getAnimeIdFromUrl();
 
@@ -337,11 +521,16 @@ async function loadAnimePage() {
 
     try {
         currentAnime = await fetchAnimeById(animeId);
+
         renderAnimeDetails(currentAnime);
+        renderDescription(currentAnime);
+        renderCharacters(currentAnime.characters);
         renderRating(currentAnime);
 
         const reviews = await fetchReviewsByAnime(animeId);
         renderReviews(reviews);
+
+        setupWriteReviewButton();
     } catch (error) {
         if (animeDetails) {
             animeDetails.innerHTML = `
@@ -358,4 +547,5 @@ async function loadAnimePage() {
     }
 }
 
+setupAnimeTabs();
 loadAnimePage();

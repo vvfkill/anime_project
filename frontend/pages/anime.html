@@ -10,27 +10,62 @@
     <div class="page-shell">
         <div id="siteHeader"></div>
 
-        <main class="main-content">
-            <section id="animeDetails" class="anime-page-top glass">
+        <main class="anime-main">
+            <section id="animeDetails" class="anime-hero-card glass">
                 <p>Загрузка...</p>
             </section>
 
-            <section class="anime-page-bottom">
-                <div class="anime-tabs glass">
+            <section class="anime-bottom-layout">
+                <div class="anime-tabs-card glass">
                     <div class="tabs-row">
-                        <button type="button" class="tab-btn active">Описание</button>
-                        <button type="button" class="tab-btn">Персонажи</button>
-                        <button type="button" class="tab-btn">Отзывы</button>
-                        <button type="button" class="tab-btn">Похожее</button>
+                        <button type="button" class="tab-btn active" data-tab="description">Описание</button>
+                        <button type="button" class="tab-btn" data-tab="characters">Персонажи</button>
+                        <button type="button" class="tab-btn" data-tab="reviews">Отзывы</button>
+                        <button type="button" class="tab-btn" data-tab="similar">Похожее</button>
                     </div>
 
-                    <div class="reviews-header">
-                        <h2>Отзывы пользователей</h2>
-                        <button type="button" class="primary-btn">Написать отзыв</button>
+                    <div class="tab-content active" id="descriptionTab">
+                        <h2>Описание</h2>
+                        <div id="descriptionContainer">
+                            <p>Загрузка описания...</p>
+                        </div>
                     </div>
 
-                    <div id="reviewsContainer" class="reviews-list">
-                        <p>Загрузка отзывов...</p>
+                    <div class="tab-content" id="charactersTab">
+                        <h2>Персонажи</h2>
+
+                        <div id="charactersContainer" class="characters-grid">
+                            <p>Загрузка персонажей...</p>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="reviewsTab">
+                        <div class="reviews-header">
+                            <h2>Отзывы пользователей</h2>
+
+                            <div class="reviews-actions">
+                                <select class="review-sort-select">
+                                    <option>Популярные</option>
+                                    <option>Новые</option>
+                                    <option>Высокая оценка</option>
+                                </select>
+
+                                <button type="button" class="primary-btn" id="writeReviewBtn">
+                                    Написать отзыв
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="reviewsContainer" class="reviews-list">
+                            <p>Загрузка отзывов...</p>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="similarTab">
+                        <h2>Похожее аниме</h2>
+                        <div id="similarAnimeContainer" class="similar-anime-grid">
+                            <p>Похожие аниме пока не добавлены.</p>
+                        </div>
                     </div>
                 </div>
 
@@ -39,6 +74,14 @@
                     <div id="ratingValue" class="big-rating">—</div>
                     <div class="stars">★★★★★</div>
                     <p id="ratingSubtext">Средняя оценка</p>
+
+                    <div class="rating-bars">
+                        <div><span>5 ★</span><progress value="78" max="100"></progress><span>78%</span></div>
+                        <div><span>4 ★</span><progress value="15" max="100"></progress><span>15%</span></div>
+                        <div><span>3 ★</span><progress value="5" max="100"></progress><span>5%</span></div>
+                        <div><span>2 ★</span><progress value="1" max="100"></progress><span>1%</span></div>
+                        <div><span>1 ★</span><progress value="1" max="100"></progress><span>1%</span></div>
+                    </div>
                 </aside>
             </section>
         </main>

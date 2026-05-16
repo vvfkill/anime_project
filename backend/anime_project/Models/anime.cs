@@ -13,6 +13,8 @@ public partial class anime
 
     public string? description { get; set; }
 
+    public string? full_description { get; set; }
+
     public int? release_year { get; set; }
 
     public string? type { get; set; }
