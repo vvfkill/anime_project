@@ -26,6 +26,7 @@ public class AnimeDto
 
     public List<AnimeCharacterDto> Characters { get; set; } = new();
 
+    public List<AnimeListDto> SimilarAnime { get; set; } = new();
     public string? PosterUrl { get; set; }
 }
 

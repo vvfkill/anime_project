@@ -129,6 +129,26 @@ public async Task<AnimeDto?> GetAnimeByIdAsync(int id)
         })
         .ToListAsync();
 
+    var genreIds = anime.genres
+    .Select(g => g.genre_id)
+    .ToList();
+
+    var similarAnime = await _context.animes
+        .Where(a => a.anime_id != id)
+        .Where(a => a.genres.Any(g => genreIds.Contains(g.genre_id)))
+        .AsNoTracking()
+        .OrderByDescending(a => a.average_rating)
+        .Take(6)
+        .Select(a => new AnimeListDto
+        {
+            AnimeId = a.anime_id,
+            TitleRu = a.title_ru,
+            TitleOriginal = a.title_original,
+            AverageRating = a.average_rating,
+            PosterUrl = a.poster_url
+        })
+        .ToListAsync();
+
     return new AnimeDto
     {
         AnimeId = anime.anime_id,
@@ -145,7 +165,8 @@ public async Task<AnimeDto?> GetAnimeByIdAsync(int id)
         Studios = anime.studios.Select(s => s.name).ToList(),
         Tags = anime.tags.Select(t => t.name).ToList(),
 
-        Characters = characters
+        Characters = characters,
+        SimilarAnime = similarAnime
     };
 }
 

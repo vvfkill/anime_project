@@ -1104,3 +1104,106 @@
     color: var(--text-soft);
     line-height: 1.7;
 }
+
+.similar-anime-grid {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    padding: 4px 4px 18px;
+}
+
+.similar-anime-grid::-webkit-scrollbar {
+    height: 8px;
+}
+
+.similar-anime-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 999px;
+}
+
+.similar-anime-grid::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.45);
+    border-radius: 999px;
+}
+
+.similar-anime-card {
+    flex: 0 0 220px;
+    width: 220px;
+    height: 350px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 18px;
+    color: inherit;
+    text-decoration: none;
+    background: rgba(120, 92, 255, 0.08);
+    border: 1px solid rgba(160, 120, 255, 0.16);
+    transition: 0.2s ease;
+}
+
+.similar-anime-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(160, 120, 255, 0.42);
+    background: rgba(120, 92, 255, 0.13);
+}
+
+.similar-anime-card img {
+    width: 100%;
+    height: 235px;
+    flex: 0 0 235px;
+    object-fit: cover;
+    object-position: center;
+    background: #31245f;
+}
+
+.similar-anime-card div {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 13px 14px;
+}
+
+.similar-anime-card h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 0.98rem;
+    line-height: 1.25;
+
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.similar-anime-card p {
+    margin: 0;
+    color: var(--text-soft);
+    font-size: 0.84rem;
+    line-height: 1.35;
+
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.similar-anime-card span {
+    margin-top: auto;
+    color: #ffd166;
+    font-weight: 800;
+    font-size: 0.9rem;
+}
+@media (max-width: 900px) {
+    .similar-anime-grid {
+        grid-template-columns: repeat(2, minmax(150px, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    .similar-anime-grid {
+        grid-template-columns: 1fr;
+    }
+}

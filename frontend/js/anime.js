@@ -10,6 +10,8 @@ const ratingSubtext = document.getElementById("ratingSubtext");
 const descriptionContainer = document.getElementById("descriptionContainer");
 const writeReviewBtn = document.getElementById("writeReviewBtn");
 const charactersContainer = document.getElementById("charactersContainer");
+const similarAnimeContainer = document.getElementById("similarAnimeContainer");
+
 
 let currentAnime = null;
 
@@ -589,6 +591,44 @@ async function createReview(animeId, score, text) {
     }
 }
 
+function renderSimilarAnime(items) {
+    if (!similarAnimeContainer) return;
+
+    if (!items || items.length === 0) {
+        similarAnimeContainer.innerHTML = `
+            <div class="empty-tab-state">
+                <p>Похожие аниме пока не найдены.</p>
+            </div>
+        `;
+        return;
+    }
+
+    similarAnimeContainer.innerHTML = items.map(anime => {
+        const fallbackPoster = "../images/no-poster.jpg";
+        const poster = getPosterUrl(anime.posterUrl || anime.poster_url);
+        const title = anime.titleRu || anime.titleOriginal || anime.title || "Без названия";
+        const originalTitle = anime.titleOriginal || anime.title_original || "";
+        const rating = anime.averageRating ?? anime.average_rating ?? "—";
+        const animeId = anime.animeId || anime.anime_id;
+
+        return `
+            <a class="similar-anime-card" href="anime.html?id=${animeId}">
+                <img
+                    src="${poster}"
+                    alt="${title}"
+                    onerror="this.onerror=null; this.src='${fallbackPoster}';"
+                >
+
+                <div>
+                    <h3>${title}</h3>
+                    <p>${originalTitle}</p>
+                    <span>★ ${rating}</span>
+                </div>
+            </a>
+        `;
+    }).join("");
+}
+
 function setupWriteReviewButton() {
     if (!writeReviewBtn || !currentAnime) return;
 
@@ -746,6 +786,7 @@ async function loadAnimePage() {
 
         renderAnimeDetails(currentAnime);
         renderDescription(currentAnime);
+        renderSimilarAnime(currentAnime.similarAnime || currentAnime.similar_anime);
         renderCharacters(currentAnime.characters);
         renderRating(currentAnime);
 
