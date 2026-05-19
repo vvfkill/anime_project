@@ -235,11 +235,11 @@ function renderAnimeDetails(anime) {
                     </div>
 
                     <button type="button" class="outline-action-btn" id="bookmarkBtn">
-                        ♡ В избранное
+                        В избранное
                     </button>
 
                     <button type="button" class="outline-action-btn">
-                        ☆ Оценить
+                        Оценить
                     </button>
                 </div>
             </div>
@@ -331,7 +331,7 @@ function setupAnimeActions(anime) {
 
     if (bookmarkBtn) {
         bookmarkBtn.addEventListener("click", async () => {
-            await addAnimeToBookmarks(anime.animeId);
+            await toggleBookmark(anime.animeId);
         });
     }
 
@@ -344,6 +344,7 @@ function setupAnimeActions(anime) {
     });
 
     loadCurrentAnimeListStatus(anime.animeId);
+    loadCurrentBookmarkStatus(anime.animeId);
 }
 
 async function addAnimeToList(animeId, status) {
@@ -398,30 +399,83 @@ async function addAnimeToList(animeId, status) {
     }
 }
 
-async function addAnimeToBookmarks(animeId) {
-    if (!requireAuth()) return;
-
+async function loadCurrentBookmarkStatus(animeId) {
     const userId = getCurrentUserId();
 
+    if (!userId) return;
+
     try {
+        const response = await fetch(`${BOOKMARKS_API_URL}/user/${userId}`);
+
+        if (!response.ok) return;
+
+        const bookmarks = await response.json();
+
+        const currentBookmark = bookmarks.find(item =>
+            Number(item.animeId || item.anime_id) === Number(animeId)
+        );
+
+        if (!currentBookmark) return;
+
+        setBookmarkButtonState(true);
+    } catch {
+        // Не мешаем загрузке страницы, если закладки не удалось получить.
+    }
+}
+
+function setBookmarkButtonState(isBookmarked) {
+    const bookmarkBtn = document.getElementById("bookmarkBtn");
+
+    if (!bookmarkBtn) return;
+
+    bookmarkBtn.dataset.bookmarked = isBookmarked ? "true" : "false";
+    bookmarkBtn.innerHTML = isBookmarked ? "В избранном" : "В избранное";
+    bookmarkBtn.classList.toggle("active", isBookmarked);
+}
+
+async function toggleBookmark(animeId) {
+    if (!requireAuth()) return false;
+
+    const userId = getCurrentUserId();
+    const bookmarkBtn = document.getElementById("bookmarkBtn");
+    const isBookmarked = bookmarkBtn?.dataset.bookmarked === "true";
+
+    try {
+        if (isBookmarked) {
+            const response = await fetch(`${BOOKMARKS_API_URL}?userId=${userId}&animeId=${animeId}`, {
+                method: "DELETE"
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || "Не удалось удалить аниме из избранного");
+            }
+
+            setBookmarkButtonState(false);
+            return true;
+        }
+
         const response = await fetch(BOOKMARKS_API_URL, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                userId,
-                animeId
+                userId: Number(userId),
+                animeId: Number(animeId)
             })
         });
 
         if (!response.ok) {
-            throw new Error("Не удалось добавить аниме в закладки");
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.message || "Не удалось добавить аниме в избранное");
         }
 
-        alert("Аниме добавлено в закладки");
+        setBookmarkButtonState(true);
+        return true;
     } catch (error) {
         alert(error.message);
+        return false;
     }
 }
 

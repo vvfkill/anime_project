@@ -1207,3 +1207,10 @@
         grid-template-columns: 1fr;
     }
 }
+.outline-action-btn.active,
+#bookmarkBtn.active {
+    color: #fff;
+    border-color: rgba(168, 85, 247, 0.75);
+    background: rgba(139, 92, 246, 0.22);
+    box-shadow: 0 10px 24px rgba(139, 92, 246, 0.18);
+}
