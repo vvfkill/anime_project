@@ -14,6 +14,8 @@ const similarAnimeContainer = document.getElementById("similarAnimeContainer");
 
 
 let currentAnime = null;
+let currentListStatus = null;
+let currentUserScore = null;
 
 function getAnimeIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
@@ -238,15 +240,10 @@ function renderAnimeDetails(anime) {
                         В избранное
                     </button>
 
-                    <button type="button" class="outline-action-btn">
+                    <button type="button" class="outline-action-btn" id ="rateAnimeBtn">
                         Оценить
                     </button>
                 </div>
-            </div>
-
-            <div class="anime-rating-mini">
-                <strong>★ ${rating}</strong>
-                <span>Средняя оценка</span>
             </div>
 
             <aside class="anime-side-info">
@@ -289,6 +286,172 @@ function renderAnimeDetails(anime) {
     `;
 
     setupAnimeActions(anime);
+}
+
+function updateRateButtonState(score) {
+    const rateBtn = document.getElementById("rateAnimeBtn");
+
+    if (!rateBtn) return;
+
+    if (score) {
+        rateBtn.classList.add("active");
+        rateBtn.textContent = `★ ${score}/10`;
+    } else {
+        rateBtn.classList.remove("active");
+        rateBtn.textContent = "☆ Оценить";
+    }
+}
+
+function closeRatingPopup() {
+    const popup = document.getElementById("ratingPopup");
+
+    if (popup) {
+        popup.remove();
+    }
+}
+
+async function saveAnimeScore(animeId, score) {
+    if (!requireAuth()) return false;
+
+    const userId = getCurrentUserId();
+
+    const allowedStatuses = [
+        "Просмотрено",
+        "Смотрю",
+        "Запланировано",
+        "Брошено",
+        "Отложено",
+        "Пересматриваю"
+    ];
+
+    try {
+        let existingItem = null;
+
+        const listResponse = await fetch(`${USERS_API_URL}/${userId}/list`);
+
+        if (listResponse.ok) {
+            const list = await listResponse.json();
+
+            existingItem = list.find(item =>
+                Number(item.animeId || item.anime_id) === Number(animeId)
+            );
+        }
+
+        let statusToSave =
+            existingItem?.status ||
+            currentListStatus ||
+            "Смотрю";
+
+        statusToSave = String(statusToSave).trim();
+
+        if (!allowedStatuses.includes(statusToSave)) {
+            statusToSave = "Смотрю";
+        }
+
+        let response;
+
+        if (existingItem) {
+            response = await fetch(`${USERS_API_URL}/${userId}/list/${animeId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    status: statusToSave,
+                    score: Number(score)
+                })
+            });
+        } else {
+            response = await fetch(`${USERS_API_URL}/${userId}/list`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    animeId: Number(animeId),
+                    status: statusToSave,
+                    score: Number(score)
+                })
+            });
+        }
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.message || "Не удалось сохранить оценку");
+        }
+
+        currentListStatus = statusToSave;
+        currentUserScore = Number(score);
+
+        const dropdownText = document.getElementById("listDropdownText");
+
+        if (dropdownText) {
+            dropdownText.textContent = statusToSave;
+        }
+
+        updateRateButtonState(currentUserScore);
+
+        return true;
+    } catch (error) {
+        alert(error.message);
+        return false;
+    }
+}
+
+function setupRatingButton(anime) {
+    const rateBtn = document.getElementById("rateAnimeBtn");
+
+    if (!rateBtn) return;
+
+    rateBtn.addEventListener("click", () => {
+        if (!requireAuth()) return;
+
+        closeRatingPopup();
+
+        const popup = document.createElement("div");
+        popup.id = "ratingPopup";
+        popup.className = "rating-popup";
+
+        popup.innerHTML = `
+            <h3>Оценить аниме</h3>
+            <p>Выберите оценку от 1 до 10</p>
+
+            <div class="rating-options">
+                ${[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(score => `
+                    <button type="button" data-score="${score}" class="${Number(currentUserScore) === score ? "active" : ""}">
+                        ${score}
+                    </button>
+                `).join("")}
+            </div>
+
+            <button type="button" class="rating-popup-close" id="closeRatingPopup">
+                Отмена
+            </button>
+        `;
+
+        rateBtn.insertAdjacentElement("afterend", popup);
+
+        popup.querySelectorAll(".rating-options button").forEach(button => {
+            button.addEventListener("click", async () => {
+                const score = button.dataset.score;
+
+                const saved = await saveAnimeScore(anime.animeId, score);
+
+                if (!saved) return;
+
+                closeRatingPopup();
+
+                currentAnime = await fetchAnimeById(anime.animeId);
+                renderRating(currentAnime);
+            });
+        });
+
+        const closeBtn = document.getElementById("closeRatingPopup");
+
+        if (closeBtn) {
+            closeBtn.addEventListener("click", closeRatingPopup);
+        }
+    });
 }
 
 function setupAnimeActions(anime) {
@@ -345,6 +508,7 @@ function setupAnimeActions(anime) {
 
     loadCurrentAnimeListStatus(anime.animeId);
     loadCurrentBookmarkStatus(anime.animeId);
+    setupRatingButton(anime);
 }
 
 async function addAnimeToList(animeId, status) {
@@ -794,6 +958,8 @@ async function loadCurrentAnimeListStatus(animeId) {
         if (!currentItem) return;
 
         const status = currentItem.status;
+        currentListStatus = status;
+        currentUserScore = currentItem.score ?? currentItem.personalScore ?? currentItem.personal_score ?? null;
 
         if (!status) return;
 
@@ -805,7 +971,10 @@ async function loadCurrentAnimeListStatus(animeId) {
 
         document.querySelectorAll(".list-dropdown-menu button").forEach(button => {
             button.classList.toggle("active", button.dataset.status === status);
+
         });
+
+        updateRateButtonState(currentUserScore);
     } catch {
         // Не мешаем загрузке страницы, если список не удалось получить.
     }

@@ -87,9 +87,12 @@ public class UsersController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
-        catch (DbUpdateException)
-        {
-            return BadRequest(new { message = "Не удалось сохранить статус. Проверьте ограничение chk_user_list_status в базе данных." });
+        catch (DbUpdateException ex)
+{
+            return BadRequest(new
+            {
+                message = ex.InnerException?.Message ?? ex.Message
+            });
         }
         catch (Exception ex)
         {

@@ -74,8 +74,12 @@ public class AnimeService : IAnimeService
                 AnimeId = a.anime_id,
                 TitleRu = a.title_ru,
                 TitleOriginal = a.title_original,
+                ReleaseYear = a.release_year,
+                Type = a.type,
                 AverageRating = a.average_rating,
-                PosterUrl = a.poster_url
+                PosterUrl = a.poster_url,
+                Genres = a.genres.Select(g => g.name).ToList()
+
             })
             .ToListAsync();
 
@@ -144,8 +148,11 @@ public async Task<AnimeDto?> GetAnimeByIdAsync(int id)
             AnimeId = a.anime_id,
             TitleRu = a.title_ru,
             TitleOriginal = a.title_original,
+            ReleaseYear = a.release_year,
+            Type = a.type,
             AverageRating = a.average_rating,
-            PosterUrl = a.poster_url
+            PosterUrl = a.poster_url,
+            Genres = a.genres.Select(g => g.name).ToList()
         })
         .ToListAsync();
 
