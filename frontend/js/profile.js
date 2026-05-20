@@ -1,5 +1,5 @@
 const PROFILE_USERS_URL = "https://localhost:7241/api/users";
-const PROFILE_USER_LIST_URL = "https://localhost:7241/api/userlist";
+const PROFILE_USER_LIST_URL = "https://localhost:7241/api/users";
 const PROFILE_BOOKMARKS_URL = "https://localhost:7241/api/bookmarks";
 const PROFILE_REVIEWS_URL = "https://localhost:7241/api/reviews";
 
@@ -60,6 +60,17 @@ function getPosterUrl(posterUrl) {
     return posterUrl;
 }
 
+function getReviewTitle(item) {
+    return (
+        item.animeTitleRu ||
+        item.animeTitleOriginal ||
+        item.titleRu ||
+        item.titleOriginal ||
+        item.title ||
+        "Без названия"
+    );
+}
+
 function getTitle(item) {
     return item.titleRu || item.titleOriginal || item.title || "Без названия";
 }
@@ -100,12 +111,12 @@ function renderStats(list, bookmarks, reviews) {
     const watching = list.filter(item => item.status === "Смотрю").length;
     const planned = list.filter(item => item.status === "Запланировано").length;
 
-    const reviewScores = reviews
-        .map(item => Number(item.score || item.rating || 0))
+    const personalScores = list
+        .map(item => Number(item.score || item.personalScore || item.personal_score || 0))
         .filter(score => score > 0);
 
-    const avg = reviewScores.length
-        ? (reviewScores.reduce((sum, score) => sum + score, 0) / reviewScores.length).toFixed(1)
+    const avg = personalScores.length
+        ? (personalScores.reduce((sum, score) => sum + score, 0) / personalScores.length).toFixed(1)
         : "—";
 
     if (totalListCount) totalListCount.textContent = list.length;
@@ -148,8 +159,6 @@ function renderWatchingList(list) {
                         <span></span>
                     </div>
                 </div>
-
-                <button type="button">Открыть</button>
             </article>
         `;
     }).join("");
@@ -166,7 +175,7 @@ function renderProfileReviews(reviews) {
     }
 
     profileReviews.innerHTML = items.map(item => {
-        const title = getTitle(item);
+        const title = getReviewTitle(item);
         const score = item.score ?? item.rating ?? "—";
         const text = item.text || item.comment || "Текст отзыва отсутствует.";
 
@@ -234,9 +243,12 @@ async function loadProfile() {
 
     renderProfileUser();
 
-    const list = await safeFetchJson(`${PROFILE_USER_LIST_URL}/user/${userId}`);
+    const list = await safeFetchJson(`${PROFILE_USER_LIST_URL}/${userId}/list`);
     const bookmarks = await safeFetchJson(`${PROFILE_BOOKMARKS_URL}/user/${userId}`);
-    const reviews = await safeFetchJson(`${PROFILE_REVIEWS_URL}/user/${userId}`);
+    const allReviews = await safeFetchJson(PROFILE_REVIEWS_URL);
+    const reviews = allReviews.filter(review =>
+        Number(review.userId || review.user_id) === Number(userId)
+    );
 
     renderStats(list, bookmarks, reviews);
     renderWatchingList(list);

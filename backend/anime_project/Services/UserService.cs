@@ -109,7 +109,7 @@ public class UserService : IUserService
         return await _context.user_lists
             .Where(x => x.user_id == userId)
             .Include(x => x.anime)
-                .Include(x => x.anime)
+                .ThenInclude(a => a.genres)
             .AsNoTracking()
             .Select(x => new UserListDto
             {
