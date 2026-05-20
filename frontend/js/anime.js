@@ -976,7 +976,7 @@ async function loadCurrentAnimeListStatus(animeId) {
 
         updateRateButtonState(currentUserScore);
     } catch {
-        // Не мешаем загрузке страницы, если список не удалось получить.
+
     }
 }
 

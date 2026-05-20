@@ -62,6 +62,11 @@ function getBookmarkTitle(item) {
     return item.titleRu || item.titleOriginal || item.title || "Без названия";
 }
 
+function getSelectedValues(name) {
+    return [...document.querySelectorAll(`input[name="${name}"]:checked`)]
+        .map(input => input.value);
+}
+
 function getBookmarkGenres(item) {
     if (Array.isArray(item.genres)) return item.genres;
     if (typeof item.genre === "string") return [item.genre];
@@ -73,18 +78,25 @@ function getBookmarkGenres(item) {
 }
 
 function getFilteredBookmarks() {
+    const selectedTypes = getSelectedValues("bookmarkType");
+    const selectedGenres = getSelectedValues("bookmarkGenre");
+
     return bookmarks.filter(item => {
         const typeValue = String(item.type || "").toLowerCase();
-        const itemGenres = getBookmarkGenres(item);
+        const itemGenres = getBookmarkGenres(item).map(genre => genre.toLowerCase());
         const year = Number(item.releaseYear || 0);
 
-        const typeMatches =
+        const tabTypeMatches =
             currentType === "all" ||
             typeValue.includes(currentType.toLowerCase());
 
+        const sideTypeMatches =
+            selectedTypes.length === 0 ||
+            selectedTypes.some(type => typeValue === type.toLowerCase());
+
         const genreMatches =
-            currentGenre === "all" ||
-            itemGenres.some(genre => genre.toLowerCase() === currentGenre.toLowerCase());
+            selectedGenres.length === 0 ||
+            selectedGenres.some(genre => itemGenres.includes(genre.toLowerCase()));
 
         const ratingMatches =
             currentRating === "all" ||
@@ -92,7 +104,7 @@ function getFilteredBookmarks() {
 
         const yearMatches = year >= currentYearFrom && year <= currentYearTo;
 
-        return typeMatches && genreMatches && ratingMatches && yearMatches;
+        return tabTypeMatches && sideTypeMatches && genreMatches && ratingMatches && yearMatches;
     });
 }
 
@@ -221,23 +233,15 @@ function syncTypeControls(type) {
 
 function setCurrentType(type) {
     currentType = type;
-    syncTypeControls(type);
+
+    document.querySelectorAll(".tab-link").forEach(button => {
+        button.classList.toggle("active", button.dataset.type === type);
+    });
+
     applyCurrentView();
 }
 
 function setupFilters() {
-    document.querySelectorAll('input[name="bookmarkType"]').forEach(input => {
-        input.addEventListener("change", () => {
-            setCurrentType(input.value);
-        });
-    });
-
-    document.querySelectorAll('input[name="bookmarkGenre"]').forEach(input => {
-        input.addEventListener("change", () => {
-            currentGenre = input.value;
-        });
-    });
-
     document.querySelectorAll(".tab-link").forEach(button => {
         button.addEventListener("click", () => {
             setCurrentType(button.dataset.type);
@@ -246,9 +250,16 @@ function setupFilters() {
 
     document.querySelectorAll(".filter-chip").forEach(button => {
         button.addEventListener("click", () => {
+            const isActive = button.classList.contains("active");
+
             document.querySelectorAll(".filter-chip").forEach(item => {
                 item.classList.remove("active");
             });
+
+            if (isActive) {
+                currentRating = "all";
+                return;
+            }
 
             button.classList.add("active");
             currentRating = button.dataset.rating;
@@ -266,6 +277,16 @@ function setupFilters() {
         applyFiltersBtn.addEventListener("click", () => {
             currentYearFrom = Number(yearFromInput?.value || 1950);
             currentYearTo = Number(yearToInput?.value || 2026);
+
+            if (currentYearFrom > currentYearTo) {
+                const temp = currentYearFrom;
+                currentYearFrom = currentYearTo;
+                currentYearTo = temp;
+
+                if (yearFromInput) yearFromInput.value = String(currentYearFrom);
+                if (yearToInput) yearToInput.value = String(currentYearTo);
+            }
+
             applyCurrentView();
         });
     }
@@ -273,26 +294,31 @@ function setupFilters() {
     if (resetFiltersBtn) {
         resetFiltersBtn.addEventListener("click", () => {
             currentType = "all";
-            currentGenre = "all";
             currentRating = "all";
             currentSort = "date";
             currentYearFrom = 1950;
             currentYearTo = 2026;
 
-            const typeAll = document.querySelector('input[name="bookmarkType"][value="all"]');
-            const genreAll = document.querySelector('input[name="bookmarkGenre"][value="all"]');
-
-            if (typeAll) typeAll.checked = true;
-            if (genreAll) genreAll.checked = true;
             if (yearFromInput) yearFromInput.value = "1950";
             if (yearToInput) yearToInput.value = "2026";
             if (sortSelect) sortSelect.value = "date";
+
+            document.querySelectorAll('input[name="bookmarkType"]').forEach(input => {
+                input.checked = input.value === "TV Сериал";
+            });
+
+            document.querySelectorAll('input[name="bookmarkGenre"]').forEach(input => {
+                input.checked = false;
+            });
 
             document.querySelectorAll(".filter-chip").forEach(item => {
                 item.classList.remove("active");
             });
 
-            syncTypeControls("all");
+            document.querySelectorAll(".tab-link").forEach(button => {
+                button.classList.toggle("active", button.dataset.type === "all");
+            });
+
             applyCurrentView();
         });
     }

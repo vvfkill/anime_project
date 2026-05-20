@@ -268,19 +268,11 @@ function setupCatalogFilters() {
 
             if (isActive) {
                 currentRating = "all";
-                applyCatalogView(true);
                 return;
             }
 
             button.classList.add("active");
             currentRating = button.dataset.rating;
-            applyCatalogView(true);
-        });
-    });
-
-    document.querySelectorAll('input[name="catalogType"], input[name="catalogGenre"]').forEach(input => {
-        input.addEventListener("change", () => {
-            applyCatalogView(true);
         });
     });
 
