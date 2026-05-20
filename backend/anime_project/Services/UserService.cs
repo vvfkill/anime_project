@@ -109,6 +109,7 @@ public class UserService : IUserService
         return await _context.user_lists
             .Where(x => x.user_id == userId)
             .Include(x => x.anime)
+                .Include(x => x.anime)
             .AsNoTracking()
             .Select(x => new UserListDto
             {
@@ -123,7 +124,8 @@ public class UserService : IUserService
                 AverageRating = x.anime.average_rating,
                 Status = x.status,
                 Score = x.personal_score,
-                UpdatedAt = x.updated_at
+                UpdatedAt = x.updated_at,
+                Genres = x.anime.genres.Select(g => g.name).ToList()
             })
             .ToListAsync();
     }

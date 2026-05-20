@@ -14,6 +14,8 @@ public class UserListDto
 
     public string? Type { get; set; }
 
+    public List<string> Genres { get; set; } = new();
+
     public int? EpisodesTotal { get; set; }
 
     public string? PosterUrl { get; set; }

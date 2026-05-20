@@ -1,4 +1,4 @@
-const USER_LIST_URL = "https://localhost:7241/api/userlist";
+const USERS_API_URL = "https://localhost:7241/api/users";
 
 const userListGrid = document.getElementById("userListGrid");
 const listCount = document.getElementById("listCount");
@@ -23,6 +23,11 @@ let currentStatus = "all";
 let currentRating = "all";
 let currentYearFrom = 1950;
 let currentYearTo = 2026;
+
+let currentPage = 1;
+const pageSize = 5;
+let totalPages = 1;
+
 
 function getCurrentUser() {
     try {
@@ -56,7 +61,7 @@ function requireAuth() {
 function getPosterUrl(posterUrl) {
     const fallbackPoster = "../images/no-poster.jpg";
 
-    if (!posterUrl || posterUrl.trim() === "") return fallbackPoster;
+    if (!posterUrl || String(posterUrl).trim() === "") return fallbackPoster;
     if (posterUrl.startsWith("http")) return posterUrl;
     if (posterUrl.startsWith("../")) return posterUrl;
     if (posterUrl.startsWith("/")) return `https://localhost:7241${posterUrl}`;
@@ -67,6 +72,27 @@ function getPosterUrl(posterUrl) {
 
 function getTitle(item) {
     return item.titleRu || item.titleOriginal || item.title || "Без названия";
+}
+
+function getAnimeId(item) {
+    return item.animeId || item.anime_id;
+}
+
+function getGenres(item) {
+    if (Array.isArray(item.genres)) return item.genres;
+
+    if (typeof item.genres === "string") {
+        return item.genres.split(",").map(genre => genre.trim());
+    }
+
+    if (typeof item.genre === "string") return [item.genre];
+
+    return [];
+}
+
+function getSelectedValues(name) {
+    return [...document.querySelectorAll(`input[name="${name}"]:checked`)]
+        .map(input => input.value);
 }
 
 function renderUserInfo() {
@@ -91,7 +117,7 @@ async function loadUserList() {
             userListGrid.innerHTML = `<p>Загрузка...</p>`;
         }
 
-        const response = await fetch(`${USER_LIST_URL}/user/${userId}`);
+        const response = await fetch(`${USERS_API_URL}/${userId}/list`);
 
         if (!response.ok) {
             throw new Error("Не удалось загрузить список");
@@ -104,7 +130,12 @@ async function loadUserList() {
         applyCurrentView();
     } catch (error) {
         if (userListGrid) {
-            userListGrid.innerHTML = `<p>Ошибка: ${error.message}</p>`;
+            userListGrid.innerHTML = `
+                <div class="empty-state glass">
+                    <h2>Ошибка загрузки</h2>
+                    <p>${error.message}</p>
+                </div>
+            `;
         }
 
         if (listCount) {
@@ -127,21 +158,6 @@ function updateStats() {
     if (droppedCount) droppedCount.textContent = dropped;
 }
 
-function getSelectedValues(name) {
-    return [...document.querySelectorAll(`input[name="${name}"]:checked`)]
-        .map(input => input.value);
-}
-
-function getGenres(item) {
-    if (Array.isArray(item.genres)) return item.genres;
-    if (typeof item.genres === "string") {
-        return item.genres.split(",").map(genre => genre.trim());
-    }
-    if (typeof item.genre === "string") return [item.genre];
-
-    return [];
-}
-
 function getFilteredList() {
     const selectedTypes = getSelectedValues("listType");
     const selectedGenres = getSelectedValues("listGenre");
@@ -158,7 +174,7 @@ function getFilteredList() {
 
         const typeMatches =
             selectedTypes.length === 0 ||
-            selectedTypes.some(selected => type.includes(selected.toLowerCase()));
+            selectedTypes.some(selected => type === selected.toLowerCase());
 
         const genreMatches =
             selectedGenres.length === 0 ||
@@ -172,6 +188,66 @@ function getFilteredList() {
 
         return statusMatches && typeMatches && genreMatches && yearMatches && ratingMatches;
     });
+}
+
+function getCurrentPageItems(list) {
+    totalPages = Math.max(1, Math.ceil(list.length / pageSize));
+
+    if (currentPage > totalPages) {
+        currentPage = totalPages;
+    }
+
+    const start = (currentPage - 1) * pageSize;
+    return list.slice(start, start + pageSize);
+}
+
+function renderListPagination(listLength) {
+    const oldPagination = document.getElementById("listPagination");
+
+    if (oldPagination) {
+        oldPagination.remove();
+    }
+
+    if (!userListGrid || listLength === 0) return;
+
+    totalPages = Math.max(1, Math.ceil(listLength / pageSize));
+
+    const pagination = document.createElement("div");
+    pagination.id = "listPagination";
+    pagination.className = "list-pagination";
+
+    pagination.innerHTML = `
+        <button type="button" id="prevListPageBtn" class="secondary-btn" ${currentPage <= 1 ? "disabled" : ""}>
+            Назад
+        </button>
+
+        <span>Страница ${currentPage} из ${totalPages}</span>
+
+        <button type="button" id="nextListPageBtn" class="secondary-btn" ${currentPage >= totalPages ? "disabled" : ""}>
+            Вперёд
+        </button>
+    `;
+
+    userListGrid.insertAdjacentElement("afterend", pagination);
+
+    const prevBtn = document.getElementById("prevListPageBtn");
+    const nextBtn = document.getElementById("nextListPageBtn");
+
+    if (prevBtn) {
+        prevBtn.addEventListener("click", () => {
+            if (currentPage <= 1) return;
+            currentPage--;
+            applyCurrentView();
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener("click", () => {
+            if (currentPage >= totalPages) return;
+            currentPage++;
+            applyCurrentView();
+        });
+    }
 }
 
 function applyCurrentView() {
@@ -204,6 +280,8 @@ function renderList(list) {
                 <p>Попробуйте изменить фильтры.</p>
             </div>
         `;
+
+        renderListPagination(0);
         return;
     }
 
@@ -211,14 +289,18 @@ function renderList(list) {
         listCount.textContent = `Найдено: ${list.length}`;
     }
 
-    userListGrid.innerHTML = list.map(item => {
+    const pageItems = getCurrentPageItems(list);
+
+    userListGrid.innerHTML = pageItems.map(item => {
         const fallbackPoster = "../images/no-poster.jpg";
         const poster = getPosterUrl(item.posterUrl);
         const title = getTitle(item);
+        const animeId = getAnimeId(item);
+        const score = item.score ?? item.personalScore ?? item.personal_score ?? null;
 
         return `
             <article class="tracking-row glass">
-                <div class="tracking-anime-main" onclick="openAnime(${item.animeId})">
+                <div class="tracking-anime-main" onclick="openAnime(${animeId})">
                     <img
                         src="${poster}"
                         alt="${title}"
@@ -240,9 +322,11 @@ function renderList(list) {
                 </div>
 
                 <div class="tracking-row-status">
-                    <span class="status-badge ${getStatusClass(item.status)}">${item.status || "—"}</span>
+                    <span class="status-badge ${getStatusClass(item.status)}">
+                        ${item.status || "—"}
+                    </span>
 
-                    <select class="tracking-status-select" onchange="changeStatus(${item.animeId}, this.value)">
+                    <select class="tracking-status-select" onchange="changeStatus(${animeId}, this.value)">
                         ${renderStatusOptions(item.status)}
                     </select>
                 </div>
@@ -253,22 +337,20 @@ function renderList(list) {
                 </div>
 
                 <div class="tracking-row-info">
-                    <span>Прогресс</span>
-                    <strong>${item.episodesWatched || 0}/${item.episodesTotal || "—"}</strong>
+                    <span>Моя оценка</span>
+                    <strong>${score ? `★ ${score}/10` : "—"}</strong>
                 </div>
 
                 <div class="tracking-row-actions">
-                    <button type="button" class="edit-list-btn" onclick="openAnime(${item.animeId})">
-                        Открыть
-                    </button>
-
-                    <button type="button" class="remove-list-btn" onclick="removeFromList(${item.animeId})">
+                    <button type="button" class="remove-list-btn" onclick="removeFromList(${animeId})">
                         Удалить
                     </button>
                 </div>
             </article>
         `;
     }).join("");
+
+    renderListPagination(list.length);
 }
 
 function renderStatusOptions(current) {
@@ -309,28 +391,41 @@ async function changeStatus(animeId, status) {
     const userId = getCurrentUserId();
 
     try {
-        const response = await fetch(`${USER_LIST_URL}/${userId}/${animeId}`, {
+        const currentItem = userList.find(item =>
+            Number(getAnimeId(item)) === Number(animeId)
+        );
+
+        const score =
+            currentItem?.score ??
+            currentItem?.personalScore ??
+            currentItem?.personal_score ??
+            null;
+
+        const response = await fetch(`${USERS_API_URL}/${userId}/list/${animeId}`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ status })
+            body: JSON.stringify({
+                status,
+                score
+            })
         });
 
         if (!response.ok) {
-            throw new Error("Не удалось изменить статус");
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.message || "Не удалось изменить статус");
         }
 
-        const item = userList.find(item => Number(item.animeId) === Number(animeId));
-
-        if (item) {
-            item.status = status;
+        if (currentItem) {
+            currentItem.status = status;
         }
 
         updateStats();
         applyCurrentView();
     } catch (error) {
         alert(error.message);
+        await loadUserList();
     }
 }
 
@@ -342,15 +437,18 @@ async function removeFromList(animeId) {
     if (!confirm("Удалить аниме из списка?")) return;
 
     try {
-        const response = await fetch(`${USER_LIST_URL}/${userId}/${animeId}`, {
+        const response = await fetch(`${USERS_API_URL}/${userId}/list/${animeId}`, {
             method: "DELETE"
         });
 
         if (!response.ok) {
-            throw new Error("Не удалось удалить аниме из списка");
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.message || "Не удалось удалить аниме из списка");
         }
 
-        userList = userList.filter(item => Number(item.animeId) !== Number(animeId));
+        userList = userList.filter(item =>
+            Number(getAnimeId(item)) !== Number(animeId)
+        );
 
         updateStats();
         applyCurrentView();
@@ -368,15 +466,23 @@ function setupListPage() {
 
             button.classList.add("active");
             currentStatus = button.dataset.status;
+            currentPage = 1;
             applyCurrentView();
         });
     });
 
     document.querySelectorAll(".filter-chip").forEach(button => {
         button.addEventListener("click", () => {
+            const isActive = button.classList.contains("active");
+
             document.querySelectorAll(".filter-chip").forEach(item => {
                 item.classList.remove("active");
             });
+
+            if (isActive) {
+                currentRating = "all";
+                return;
+            }
 
             button.classList.add("active");
             currentRating = button.dataset.rating;
@@ -387,6 +493,17 @@ function setupListPage() {
         applyListFiltersBtn.addEventListener("click", () => {
             currentYearFrom = Number(listYearFromInput?.value || 1950);
             currentYearTo = Number(listYearToInput?.value || 2026);
+
+            if (currentYearFrom > currentYearTo) {
+                const temp = currentYearFrom;
+                currentYearFrom = currentYearTo;
+                currentYearTo = temp;
+
+                if (listYearFromInput) listYearFromInput.value = String(currentYearFrom);
+                if (listYearToInput) listYearToInput.value = String(currentYearTo);
+            }
+
+            currentPage = 1;
             applyCurrentView();
         });
     }
