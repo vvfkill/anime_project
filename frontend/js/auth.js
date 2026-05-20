@@ -84,7 +84,7 @@ async function loginUser(email, password) {
 }
 
 async function registerUser(payload) {
-    const response = await fetch(`${USERS_URL}/register`, {
+    const response = await fetch(USERS_URL, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
