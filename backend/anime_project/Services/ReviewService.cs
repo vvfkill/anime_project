@@ -47,29 +47,26 @@ public class ReviewService : IReviewService
     public async Task<List<ReviewDto>> GetReviewsByAnimeAsync(int animeId)
     {
         return await _context.reviews
-            .Where(r => r.anime_id == animeId)
-            .Include(r => r.user)
             .Include(r => r.anime)
+                .ThenInclude(a => a.genres)
+            .Include(r => r.user)
             .AsNoTracking()
-            .OrderByDescending(r => r.created_at)
             .Select(r => new ReviewDto
             {
                 ReviewId = r.review_id,
-
+                UserId = r.user_id,
                 AnimeId = r.anime_id,
+                UserNickname = r.user.nickname,
                 AnimeTitleRu = r.anime.title_ru,
                 AnimeTitleOriginal = r.anime.title_original,
-                AnimePosterUrl = r.anime.poster_url,
-                AnimeReleaseYear = r.anime.release_year,
                 AnimeType = r.anime.type,
+                AnimeReleaseYear = r.anime.release_year,
+                AnimePosterUrl = r.anime.poster_url,
                 AnimeAverageRating = r.anime.average_rating,
-
-                UserId = r.user_id,
-                UserNickname = r.user.nickname,
-
-                Text = r.text,
                 Score = r.score,
-                CreatedAt = r.created_at
+                Text = r.text,
+                CreatedAt = r.created_at,
+                Genres = r.anime.genres.Select(g => g.name).ToList()
             })
             .ToListAsync();
     }

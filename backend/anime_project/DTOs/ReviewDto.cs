@@ -15,6 +15,8 @@ public class ReviewDto
     public int UserId { get; set; }
     public string? UserNickname { get; set; }
 
+    public List<string> Genres { get; set; } = new();
+
     public string Text { get; set; } = null!;
     public int Score { get; set; }
     public DateTime CreatedAt { get; set; }

@@ -76,9 +76,10 @@ public class BookmarkService : IBookmarkService
     public async Task<List<BookmarkDto>> GetUserBookmarksAsync(int userId)
     {
         return await _context.bookmarks
-            .Include(b => b.anime)
             .Where(b => b.user_id == userId)
-            .OrderByDescending(b => b.created_at)
+            .Include(b => b.anime)
+                .ThenInclude(a => a.genres)
+            .AsNoTracking()
             .Select(b => new BookmarkDto
             {
                 BookmarkId = b.bookmark_id,
@@ -90,7 +91,8 @@ public class BookmarkService : IBookmarkService
                 EpisodesTotal = b.anime.episodes_total,
                 PosterUrl = b.anime.poster_url,
                 AverageRating = b.anime.average_rating,
-                CreatedAt = b.created_at
+                CreatedAt = b.created_at,
+                Genres = b.anime.genres.Select(g => g.name).ToList()
             })
             .ToListAsync();
     }

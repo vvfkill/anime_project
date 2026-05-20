@@ -68,10 +68,17 @@ function getSelectedValues(name) {
 }
 
 function getBookmarkGenres(item) {
-    if (Array.isArray(item.genres)) return item.genres;
-    if (typeof item.genre === "string") return [item.genre];
-    if (typeof item.genres === "string") {
-        return item.genres.split(",").map(genre => genre.trim());
+    const rawGenres = item.genres || item.Genres || item.genre || item.Genre;
+
+    if (Array.isArray(rawGenres)) {
+        return rawGenres.map(genre => {
+            if (typeof genre === "string") return genre;
+            return genre.name || genre.Name || genre.genreName || "";
+        }).filter(Boolean);
+    }
+
+    if (typeof rawGenres === "string") {
+        return rawGenres.split(",").map(genre => genre.trim()).filter(Boolean);
     }
 
     return [];
@@ -221,15 +228,6 @@ function openAnime(animeId) {
     window.location.href = `anime.html?id=${animeId}`;
 }
 
-function syncTypeControls(type) {
-    document.querySelectorAll(".tab-link").forEach(button => {
-        button.classList.toggle("active", button.dataset.type === type);
-    });
-
-    document.querySelectorAll('input[name="bookmarkType"]').forEach(input => {
-        input.checked = input.value === type;
-    });
-}
 
 function setCurrentType(type) {
     currentType = type;
@@ -304,7 +302,7 @@ function setupFilters() {
             if (sortSelect) sortSelect.value = "date";
 
             document.querySelectorAll('input[name="bookmarkType"]').forEach(input => {
-                input.checked = input.value === "TV Сериал";
+                input.checked = false;
             });
 
             document.querySelectorAll('input[name="bookmarkGenre"]').forEach(input => {

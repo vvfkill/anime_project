@@ -10,6 +10,7 @@ public class BookmarkDto
     public string? Type { get; set; }
     public int? EpisodesTotal { get; set; }
     public string? PosterUrl { get; set; }
+    public List<string> Genres { get; set; } = new();
     public decimal? AverageRating { get; set; }
     public DateTime? CreatedAt { get; set; }
 }
