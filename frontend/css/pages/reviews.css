@@ -13,11 +13,11 @@
 
 .reviews-layout {
     display: grid;
-    grid-template-columns: 280px minmax(0, 1fr);
-    gap: 30px;
+    grid-template-columns: 300px minmax(0, 1fr);
+    align-items: start;
+    gap: 28px;
     padding: 30px 28px 0;
 }
-
 .reviews-content {
     min-width: 0;
 }
@@ -151,12 +151,13 @@
         flex-direction: column;
     }
 }
+
 .reviews-page .filters-panel {
+    width: 100%;
+    max-width: 300px;
     position: sticky;
     top: 24px;
     align-self: start;
-    max-height: calc(100vh - 48px);
-    overflow-y: auto;
 }
 
 .reviews-pagination {

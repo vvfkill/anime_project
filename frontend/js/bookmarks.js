@@ -17,6 +17,10 @@ let currentSort = "date";
 let currentYearFrom = 1950;
 let currentYearTo = 2026;
 
+let currentPage = 1;
+const pageSize = 9;
+let totalPages = 1;
+
 function getCurrentUser() {
     try {
         const user = localStorage.getItem("authUser");
@@ -137,6 +141,66 @@ function getSortedBookmarks(list) {
     return sorted;
 }
 
+function getCurrentPageItems(list) {
+    totalPages = Math.max(1, Math.ceil(list.length / pageSize));
+
+    if (currentPage > totalPages) {
+        currentPage = totalPages;
+    }
+
+    const start = (currentPage - 1) * pageSize;
+    return list.slice(start, start + pageSize);
+}
+
+function renderBookmarksPagination(listLength) {
+    const oldPagination = document.getElementById("bookmarksPagination");
+
+    if (oldPagination) {
+        oldPagination.remove();
+    }
+
+    if (!bookmarksGrid || listLength === 0) return;
+
+    totalPages = Math.max(1, Math.ceil(listLength / pageSize));
+
+    const pagination = document.createElement("div");
+    pagination.id = "bookmarksPagination";
+    pagination.className = "bookmarks-pagination";
+
+    pagination.innerHTML = `
+        <button type="button" id="prevBookmarksPageBtn" class="secondary-btn" ${currentPage <= 1 ? "disabled" : ""}>
+            Назад
+        </button>
+
+        <span>Страница ${currentPage} из ${totalPages}</span>
+
+        <button type="button" id="nextBookmarksPageBtn" class="secondary-btn" ${currentPage >= totalPages ? "disabled" : ""}>
+            Вперёд
+        </button>
+    `;
+
+    bookmarksGrid.insertAdjacentElement("afterend", pagination);
+
+    const prevBtn = document.getElementById("prevBookmarksPageBtn");
+    const nextBtn = document.getElementById("nextBookmarksPageBtn");
+
+    if (prevBtn) {
+        prevBtn.addEventListener("click", () => {
+            if (currentPage <= 1) return;
+            currentPage--;
+            applyCurrentView();
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener("click", () => {
+            if (currentPage >= totalPages) return;
+            currentPage++;
+            applyCurrentView();
+        });
+    }
+}
+
 function applyCurrentView() {
     const filtered = getFilteredBookmarks();
     const sorted = getSortedBookmarks(filtered);
@@ -174,6 +238,7 @@ function renderBookmarks(list) {
                 <a class="primary-btn" href="index.html">На главную</a>
             </div>
         `;
+        renderBookmarksPagination(0);
         return;
     }
 
@@ -185,12 +250,15 @@ function renderBookmarks(list) {
                 <p>Попробуйте изменить фильтры.</p>
             </div>
         `;
+        renderBookmarksPagination(0);
         return;
     }
 
     bookmarksCount.textContent = `Найдено: ${list.length}`;
 
-    bookmarksGrid.innerHTML = list.map(item => {
+    const pageItems = getCurrentPageItems(list);
+
+    bookmarksGrid.innerHTML = pageItems.map(item => {
         const fallbackPoster = "../images/no-poster.jpg";
         const poster = getPosterUrl(item.posterUrl);
         const title = getBookmarkTitle(item);
@@ -204,7 +272,14 @@ function renderBookmarks(list) {
                 >
 
                 <div class="bookmark-info">
-                    <div class="bookmark-icon">▮</div>
+                    <button
+                        type="button"
+                        class="bookmark-remove-btn"
+                        onclick="removeBookmark(event, ${item.animeId})"
+                        title="Удалить из закладок"
+                    >
+                        ×
+                    </button>
 
                     <h3>${title}</h3>
                     <p>${item.titleOriginal || ""}</p>
@@ -222,12 +297,42 @@ function renderBookmarks(list) {
             </article>
         `;
     }).join("");
+
+    renderBookmarksPagination(list.length);
 }
 
 function openAnime(animeId) {
     window.location.href = `anime.html?id=${animeId}`;
 }
 
+async function removeBookmark(event, animeId) {
+    event.stopPropagation();
+
+    if (!requireAuth()) return;
+
+    const userId = getCurrentUserId();
+
+    if (!confirm("Удалить аниме из закладок?")) return;
+
+    try {
+        const response = await fetch(`${BOOKMARKS_URL}?userId=${userId}&animeId=${animeId}`, {
+            method: "DELETE"
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.message || "Не удалось удалить закладку");
+        }
+
+        bookmarks = bookmarks.filter(item =>
+            Number(item.animeId || item.anime_id) !== Number(animeId)
+        );
+
+        applyCurrentView();
+    } catch (error) {
+        alert(error.message);
+    }
+}
 
 function setCurrentType(type) {
     currentType = type;
