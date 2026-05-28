@@ -1,7 +1,7 @@
 ﻿using anime_project.DTOs;
 using anime_project.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace anime_project.Controllers;
 
@@ -27,10 +27,8 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> GetById(int id)
     {
         var user = await _userService.GetUserByIdAsync(id);
-
         if (user == null)
             return NotFound();
-
         return Ok(user);
     }
 
@@ -40,12 +38,7 @@ public class UsersController : ControllerBase
         try
         {
             var userId = await _userService.CreateUserAsync(dto);
-
-            return Ok(new
-            {
-                message = "User created",
-                userId
-            });
+            return Ok(new { message = "User created", userId });
         }
         catch (Exception ex)
         {
@@ -57,10 +50,8 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> Login(LoginDto dto)
     {
         var result = await _userService.LoginAsync(dto);
-
         if (result == null)
             return Unauthorized(new { message = "Invalid email or password" });
-
         return Ok(result);
     }
 
@@ -79,60 +70,49 @@ public class UsersController : ControllerBase
             await _userService.AddToListAsync(id, dto);
             return Ok(new { message = "Added to list" });
         }
-        catch (InvalidOperationException ex)
+        catch (PostgresException ex)
         {
-            return Conflict(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (DbUpdateException ex)
-{
-            return BadRequest(new
-            {
-                message = ex.InnerException?.Message ?? ex.Message
-            });
+            return BadRequest(new { message = ex.MessageText });
         }
         catch (Exception ex)
         {
-            return NotFound(new { message = ex.Message });
+            return BadRequest(new { message = ex.Message });
         }
     }
 
     [HttpPut("{userId}/list/{animeId}")]
-    public async Task<IActionResult> UpdateUserList(int userId, int animeId, UpdateUserListDto dto)
+    public async Task<IActionResult> UpdateUserListAsync(int userId, int animeId, [FromBody] UpdateUserListDto dto)
     {
         try
         {
             await _userService.UpdateUserListAsync(userId, animeId, dto);
-            return Ok(new { message = "Updated" });
+            return Ok(new { message = "Список успешно обновлён" });
         }
-        catch (KeyNotFoundException ex)
+        catch (PostgresException ex)
         {
-            return NotFound(new { message = ex.Message });
+            return BadRequest(new { message = ex.MessageText });
         }
-        catch (ArgumentException ex)
+        catch (Exception ex)
         {
             return BadRequest(new { message = ex.Message });
-        }
-        catch (DbUpdateException)
-        {
-            return BadRequest(new { message = "Не удалось сохранить статус. Проверьте ограничение chk_user_list_status в базе данных." });
         }
     }
 
     [HttpDelete("{userId}/list/{animeId}")]
-    public async Task<IActionResult> DeleteFromUserList(int userId, int animeId)
+    public async Task<IActionResult> DeleteFromUserListAsync(int userId, int animeId)
     {
         try
         {
             await _userService.DeleteFromUserListAsync(userId, animeId);
-            return Ok(new { message = "Deleted" });
+            return Ok(new { message = "Запись успешно удалена" });
         }
-        catch (KeyNotFoundException ex)
+        catch (PostgresException ex)
         {
-            return NotFound(new { message = ex.Message });
+            return BadRequest(new { message = ex.MessageText });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
     }
 }

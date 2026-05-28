@@ -2,21 +2,13 @@
 using anime_project.DTOs;
 using anime_project.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
+using Npgsql;
 
 namespace anime_project.Services;
 
 public class UserService : IUserService
 {
-    private static readonly HashSet<string> AllowedListStatuses = new(StringComparer.Ordinal)
-    {
-        "Просмотрено",
-        "Брошено",
-        "Отложено",
-        "Запланировано",
-        "Пересматриваю",
-        "Смотрю"
-    };
-
     private readonly AnimeProjectContext _context;
 
     public UserService(AnimeProjectContext context)
@@ -132,74 +124,122 @@ public class UserService : IUserService
 
     public async Task AddToListAsync(int userId, AddToUserListDto dto)
     {
-        ValidateListStatus(dto.Status);
-        ValidateScore(dto.Score);
+        await using var connection = (NpgsqlConnection)_context.Database.GetDbConnection();
 
-        var userExists = await _context.users
-            .AnyAsync(u => u.user_id == userId);
-
-        if (!userExists)
-            throw new Exception("Пользователь не найден");
-
-        var animeExists = await _context.animes
-            .AnyAsync(a => a.anime_id == dto.AnimeId);
-
-        if (!animeExists)
-            throw new Exception("Аниме не найдено");
-
-        var exists = await _context.user_lists
-            .AnyAsync(x => x.user_id == userId && x.anime_id == dto.AnimeId);
-
-        if (exists)
-            throw new InvalidOperationException("Аниме уже добавлено в список");
-
-        var item = new user_list
+        if (connection.State != ConnectionState.Open)
         {
-            user_id = userId,
-            anime_id = dto.AnimeId,
-            status = dto.Status,
-            personal_score = dto.Score,
-            updated_at = DateTime.Now
-        };
+            await connection.OpenAsync();
+        }
 
-        _context.user_lists.Add(item);
-        await _context.SaveChangesAsync();
+        await using var command = new NpgsqlCommand(
+            "select add_to_user_list(@userId, @animeId, @status, @personalScore);",
+            connection
+        );
 
-        await RecalculateAnimeRatingAsync(dto.AnimeId);
+        command.Parameters.AddWithValue("@userId", userId);
+        command.Parameters.AddWithValue("@animeId", dto.AnimeId);
+        command.Parameters.AddWithValue("@status", (object?)dto.Status ?? DBNull.Value);
+        command.Parameters.AddWithValue("@personalScore", (object?)dto.Score ?? DBNull.Value);
+
+        try
+        {
+            var result = await command.ExecuteScalarAsync();
+
+            if (result == null || result == DBNull.Value)
+            {
+                throw new Exception("Функция add_to_user_list не вернула list_id");
+            }
+
+            await RecalculateAnimeRatingAsync(dto.AnimeId);
+        }
+        catch (PostgresException ex)
+        {
+            throw new Exception(ex.MessageText);
+        }
     }
 
     public async Task UpdateUserListAsync(int userId, int animeId, UpdateUserListDto dto)
     {
-        ValidateListStatus(dto.Status);
-        ValidateScore(dto.Score);
+        await using var connection = (NpgsqlConnection)_context.Database.GetDbConnection();
 
-        var item = await _context.user_lists
-            .FirstOrDefaultAsync(x => x.user_id == userId && x.anime_id == animeId);
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync();
+        }
 
-        if (item == null)
-            throw new KeyNotFoundException("Запись списка не найдена");
+        await using var command = new NpgsqlCommand(
+            "select update_user_list(@userId, @animeId, @status, @personalScore);",
+            connection
+        );
 
-        item.status = dto.Status;
-        item.personal_score = dto.Score;
-        item.updated_at = DateTime.Now;
+        command.Parameters.AddWithValue("@userId", userId);
+        command.Parameters.AddWithValue("@animeId", animeId);
+        command.Parameters.AddWithValue("@status", (object?)dto.Status ?? DBNull.Value);
+        command.Parameters.AddWithValue("@personalScore", (object?)dto.Score ?? DBNull.Value);
 
-        await _context.SaveChangesAsync();
+        try
+        {
+            var result = await command.ExecuteScalarAsync();
 
-        await RecalculateAnimeRatingAsync(animeId);
+            if (result == null || result == DBNull.Value)
+            {
+                throw new Exception("Функция update_user_list не вернула результат");
+            }
+
+            var updated = Convert.ToBoolean(result);
+
+            if (!updated)
+            {
+                throw new Exception("Запись списка не была обновлена");
+            }
+
+            await RecalculateAnimeRatingAsync(animeId);
+        }
+        catch (PostgresException ex)
+        {
+            throw new Exception(ex.MessageText);
+        }
     }
 
     public async Task DeleteFromUserListAsync(int userId, int animeId)
     {
-        var item = await _context.user_lists
-            .FirstOrDefaultAsync(x => x.user_id == userId && x.anime_id == animeId);
+        await using var connection = (NpgsqlConnection)_context.Database.GetDbConnection();
 
-        if (item == null)
-            throw new KeyNotFoundException("Запись списка не найдена");
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync();
+        }
 
-        _context.user_lists.Remove(item);
-        await _context.SaveChangesAsync();
+        await using var command = new NpgsqlCommand(
+            "select delete_from_user_list(@userId, @animeId);",
+            connection
+        );
 
-        await RecalculateAnimeRatingAsync(animeId);
+        command.Parameters.AddWithValue("@userId", userId);
+        command.Parameters.AddWithValue("@animeId", animeId);
+
+        try
+        {
+            var result = await command.ExecuteScalarAsync();
+
+            if (result == null || result == DBNull.Value)
+            {
+                throw new Exception("Функция delete_from_user_list не вернула результат");
+            }
+
+            var deleted = Convert.ToBoolean(result);
+
+            if (!deleted)
+            {
+                throw new Exception("Запись списка не была удалена");
+            }
+
+            await RecalculateAnimeRatingAsync(animeId);
+        }
+        catch (PostgresException ex)
+        {
+            throw new Exception(ex.MessageText);
+        }
     }
 
     private async Task RecalculateAnimeRatingAsync(int animeId)
@@ -219,20 +259,5 @@ public class UserService : IUserService
             : null;
 
         await _context.SaveChangesAsync();
-    }
-
-    private static void ValidateListStatus(string? status)
-    {
-        if (string.IsNullOrWhiteSpace(status))
-            throw new ArgumentException("Статус списка обязателен");
-
-        if (!AllowedListStatuses.Contains(status))
-            throw new ArgumentException("Недопустимый статус списка");
-    }
-
-    private static void ValidateScore(int? score)
-    {
-        if (score is < 1 or > 10)
-            throw new ArgumentException("Оценка должна быть от 1 до 10");
     }
 }
