@@ -1,7 +1,8 @@
-﻿using anime_project.Data;
+﻿using System.Data;
+using anime_project.Data;
 using anime_project.DTOs;
-using anime_project.Models;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace anime_project.Services;
 
@@ -14,72 +15,98 @@ public class BookmarkService : IBookmarkService
         _context = context;
     }
 
-    public async Task AddBookmarkAsync(AddBookmarkDto dto)
+    public async Task<int> AddBookmarkAsync(AddBookmarkDto dto)
     {
-        var userExists = await _context.users
-            .AnyAsync(u => u.user_id == dto.UserId);
+        await using var connection = (NpgsqlConnection)_context.Database.GetDbConnection();
 
-        if (!userExists)
-            throw new Exception("Пользователь не найден");
-
-        var animeExists = await _context.animes
-            .AnyAsync(a => a.anime_id == dto.AnimeId);
-
-        if (!animeExists)
-            throw new Exception("Аниме не найдено");
-
-        var bookmarkExists = await _context.bookmarks
-            .AnyAsync(b => b.user_id == dto.UserId && b.anime_id == dto.AnimeId);
-
-        if (bookmarkExists)
-            throw new Exception("Аниме уже добавлено в закладки");
-
-        var bookmark = new bookmark
+        if (connection.State != ConnectionState.Open)
         {
-            user_id = dto.UserId,
-            anime_id = dto.AnimeId,
-            created_at = DateTime.Now
-        };
+            await connection.OpenAsync();
+        }
 
-        _context.bookmarks.Add(bookmark);
-        await _context.SaveChangesAsync();
+        await using var command = new NpgsqlCommand(
+            "select add_bookmark(@userId, @animeId);",
+            connection
+        );
+
+        command.Parameters.AddWithValue("@userId", dto.UserId);
+        command.Parameters.AddWithValue("@animeId", dto.AnimeId);
+
+        try
+        {
+            var result = await command.ExecuteScalarAsync();
+
+            if (result == null || result == DBNull.Value)
+            {
+                throw new Exception("Функция add_bookmark не вернула bookmark_id");
+            }
+
+            return Convert.ToInt32(result);
+        }
+        catch (PostgresException ex)
+        {
+            throw new Exception(ex.MessageText);
+        }
     }
+
     public async Task DeleteBookmarkAsync(int userId, int animeId)
     {
         var bookmark = await _context.bookmarks
-            .FirstOrDefaultAsync(b => b.user_id == userId && b.anime_id == animeId);
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b =>
+                b.user_id == userId &&
+                b.anime_id == animeId
+            );
 
         if (bookmark == null)
-            throw new Exception("Bookmark not found");
-
-        _context.bookmarks.Remove(bookmark);
-        await _context.SaveChangesAsync();
-    }
-    public async Task RemoveBookmarkAsync(int userId, int animeId)
-    {
-        var bookmark = await _context.bookmarks
-            .FirstOrDefaultAsync(b => b.user_id == userId && b.anime_id == animeId);
-
-        if (bookmark == null)
+        {
             throw new Exception("Закладка не найдена");
+        }
 
-        _context.bookmarks.Remove(bookmark);
-        await _context.SaveChangesAsync();
-    }
+        await using var connection = (NpgsqlConnection)_context.Database.GetDbConnection();
 
-    public async Task<bool> IsBookmarkedAsync(int userId, int animeId)
-    {
-        return await _context.bookmarks
-            .AnyAsync(b => b.user_id == userId && b.anime_id == animeId);
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync();
+        }
+
+        await using var command = new NpgsqlCommand(
+            "select delete_bookmark(@bookmarkId, @userId, @animeId);",
+            connection
+        );
+
+        command.Parameters.AddWithValue("@bookmarkId", bookmark.bookmark_id);
+        command.Parameters.AddWithValue("@userId", userId);
+        command.Parameters.AddWithValue("@animeId", animeId);
+
+        try
+        {
+            var result = await command.ExecuteScalarAsync();
+
+            if (result == null || result == DBNull.Value)
+            {
+                throw new Exception("Функция delete_bookmark не вернула результат");
+            }
+
+            var isDeleted = Convert.ToBoolean(result);
+
+            if (!isDeleted)
+            {
+                throw new Exception("Закладка не была удалена");
+            }
+        }
+        catch (PostgresException ex)
+        {
+            throw new Exception(ex.MessageText);
+        }
     }
 
     public async Task<List<BookmarkDto>> GetUserBookmarksAsync(int userId)
     {
         return await _context.bookmarks
-            .Where(b => b.user_id == userId)
-            .Include(b => b.anime)
-                .ThenInclude(a => a.genres)
             .AsNoTracking()
+            .Where(b => b.user_id == userId)
+            .OrderByDescending(b => b.created_at)
             .Select(b => new BookmarkDto
             {
                 BookmarkId = b.bookmark_id,
@@ -92,8 +119,20 @@ public class BookmarkService : IBookmarkService
                 PosterUrl = b.anime.poster_url,
                 AverageRating = b.anime.average_rating,
                 CreatedAt = b.created_at,
-                Genres = b.anime.genres.Select(g => g.name).ToList()
+                Genres = b.anime.genres
+                    .Select(g => g.name)
+                    .ToList()
             })
             .ToListAsync();
+    }
+
+    public async Task<bool> IsBookmarkedAsync(int userId, int animeId)
+    {
+        return await _context.bookmarks
+            .AsNoTracking()
+            .AnyAsync(b =>
+                b.user_id == userId &&
+                b.anime_id == animeId
+            );
     }
 }

@@ -9,16 +9,40 @@ create table if not exists bookmark_log(
 	changed_by varchar(50) default current_user
 )
 
+select *
+from bookmark_log
+
 --добавление закладок
 create or replace function add_bookmark (p_userId integer, p_animeId integer)
 returns integer 
 as $$
 declare new_id integer;
 begin 
+	if p_userId is null or p_userId <= 0 then
+		raise exception 'Некорректный user_id: %', p_userId;
+	end if;
+	if p_animeId is null or p_animeId <= 0 then
+		raise exception 'Некорректный anime_id: %', p_animeId;
+	end if;
+	if not exists (
+		select 1
+		from users
+		where user_id = p_userId
+	) then
+		raise exception 'Пользователь с id % не найден', p_userId;
+	end if;
+	if not exists (
+		select 1
+		from anime
+		where anime_id = p_animeId
+	) then
+		raise exception 'Аниме с id % не найден', p_animeId;
+	end if;
 	if exists (
 		select 1 
 		from bookmark
-		where user_id = p_userId and anime_id = p_animeId) then
+		where user_id = p_userId and anime_id = p_animeId
+	) then
 		raise exception 'Закладка уже существует';
 	end if;
 	insert into bookmark(user_id, anime_id)
@@ -30,19 +54,61 @@ $$
 language plpgsql;
 
 --удаление
-create or replace function delete_bookmark(p_bookmarkId integer,p_userId integer, p_animeId integer)
+create or replace function delete_bookmark(
+    p_bookmarkId integer,
+    p_userId integer,
+    p_animeId integer
+)
 returns boolean
 as $$
 begin 
-	if not exists (
-		select 1 
-		from bookmark
-		where bookmark_id = p_bookmarkId) then
-		return false;
+	if p_userId is null or p_userId <= 0 then
+		raise exception 'Некорректный user_id: %', p_userId;
 	end if;
-	delete 
-	from bookmark where bookmark_id = p_bookmarkId;
-	return true;
+	if p_animeId is null or p_animeId <= 0 then
+		raise exception 'Некорректный anime_id: %', p_animeId;
+	end if;
+	if p_bookmarkId is null or p_bookmarkId <= 0 then
+		raise exception 'Некорректный bookmark_id: %', p_bookmarkId;
+	end if;
+	if not exists (
+		select 1
+		from users
+		where user_id = p_userId
+	) then
+		raise exception 'Пользователь с id % не найден', p_userId;
+	end if;
+	if not exists (
+		select 1
+		from anime
+		where anime_id = p_animeId
+	) then
+		raise exception 'Аниме с id % не найден', p_animeId;
+	end if;
+	if not exists (
+		select 1
+		from bookmark
+		where bookmark_id = p_bookmarkId
+	) then
+		raise exception 'Закладка с id % не найден', p_bookmarkId;
+	end if;
+    if not exists (
+        select 1 
+        from bookmark
+        where bookmark_id = p_bookmarkId
+          and user_id = p_userId
+          and anime_id = p_animeId
+    ) then
+        return false;
+    end if;
+
+    delete 
+    from bookmark 
+    where bookmark_id = p_bookmarkId
+      and user_id = p_userId
+      and anime_id = p_animeId;
+
+    return true;
 end;
 $$
 language plpgsql;

@@ -15,29 +15,33 @@ public class BookmarksController : ControllerBase {
 }
 
 [HttpPost]
-public async Task<IActionResult > AddBookmark([FromBody] AddBookmarkDto dto) {
-    try
-
+public async Task<IActionResult> AddBookmark([FromBody] AddBookmarkDto dto)
 {
-    await _bookmarkService.AddBookmarkAsync(dto);
-    return Ok(new { message = "Аниме добавлено в закладки" });
+    try
+    {
+        var bookmarkId = await _bookmarkService.AddBookmarkAsync(dto);
+
+        return Ok(new
+        {
+            message = "Закладка добавлена",
+            bookmarkId
+        });
+    }
+    catch (Exception ex)
+    {
+        return BadRequest(new { message = ex.Message });
+    }
 }
 
-catch (Exception ex) {
-    return BadRequest(new { message = ex.Message });
-}
 
-}
 
 [HttpDelete]
 public async Task<IActionResult > DeleteBookmark([FromQuery] int userId, [FromQuery] int animeId) {
     try
-
 {
     await _bookmarkService.DeleteBookmarkAsync(userId, animeId);
     return Ok(new { message = "Аниме удалено из закладок" });
 }
-
 catch (Exception ex) {
     return BadRequest(new { message = ex.Message });
 }
