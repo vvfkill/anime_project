@@ -14,3 +14,7 @@
 - database/ — SQL-скрипты
 - backend/ — серверная часть
 - frontend/ — клиентская часть
+
+- ## Automated testing
+
+The project includes automated UI and API testing.
