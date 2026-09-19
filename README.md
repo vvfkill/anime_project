@@ -18,3 +18,7 @@
 - ## Automated testing
 
 The project includes automated UI and API testing.
+
+## Project technologies
+
+JavaScript, C#, CSS, HTML, PostgreSQL.
